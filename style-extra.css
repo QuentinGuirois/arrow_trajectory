@@ -1,0 +1,182 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;600;700&family=Exo+2:wght@300;400;500;600&display=swap');
+    
+    :root {
+      --neon-blue: #00f7ff;
+      --neon-purple: #bd00ff;
+      --neon-green: #00ff9d;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+      color: #e2e8f0;
+      font-family: 'Exo 2', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+      position: relative;
+    }
+    
+    body::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at 10% 20%, rgba(189, 0, 255, 0.1) 0%, transparent 20%),
+                  radial-gradient(circle at 90% 80%, rgba(0, 247, 255, 0.1) 0%, transparent 20%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    h1, h2, h3 {
+      font-family: 'Orbitron', sans-serif;
+      font-weight: 700;
+    }
+    
+    .neon-text {
+      text-shadow: 0 0 5px var(--neon-blue), 0 0 10px var(--neon-blue);
+    }
+    
+    .card-glass {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(125, 211, 252, 0.2);
+      border-radius: 16px;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+    }
+    
+    .input-field {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid rgba(125, 211, 252, 0.2);
+      color: #e2e8f0;
+      transition: all 0.3s ease;
+    }
+    
+    .input-field:focus {
+      border-color: var(--neon-blue);
+      box-shadow: 0 0 0 3px rgba(0, 247, 255, 0.3);
+      outline: none;
+    }
+    
+    .btn-neon {
+      background: linear-gradient(45deg, var(--neon-purple), var(--neon-blue));
+      color: white;
+      border: none;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      box-shadow: 0 0 15px rgba(189, 0, 255, 0.5);
+    }
+    
+    .btn-neon:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 20px rgba(189, 0, 255, 0.7), 0 0 30px rgba(0, 247, 255, 0.5);
+    }
+    
+    .btn-neon-secondary {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--neon-green);
+      color: var(--neon-green);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-neon-secondary:hover {
+      background: rgba(0, 255, 157, 0.1);
+      box-shadow: 0 0 10px rgba(0, 255, 157, 0.3);
+    }
+    
+    .energy-display {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--neon-green);
+      border-radius: 8px;
+      padding: 10px 15px;
+      font-size: 1.2rem;
+      text-align: center;
+      color: var(--neon-green);
+      box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
+    }
+    
+    .tab-active {
+      color: var(--neon-blue);
+      position: relative;
+    }
+    
+    .tab-active::after {
+      content: '';
+      position: absolute;
+      bottom: -5px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: var(--neon-blue);
+      box-shadow: 0 0 8px var(--neon-blue);
+    }
+    
+    .grid-lines {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-image: 
+        linear-gradient(rgba(125, 211, 252, 0.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(125, 211, 252, 0.05) 1px, transparent 1px);
+      background-size: 20px 20px;
+      pointer-events: none;
+      border-radius: 16px;
+      z-index: 0;
+    }
+    
+    .trajectory-glow {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: radial-gradient(circle at center, rgba(0, 247, 255, 0.1) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: -1;
+    }
+    
+    .chart-container {
+      min-height: 400px;
+      position: relative;
+    }
+    
+    .trajectory-card {
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .trajectory-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 25px rgba(0, 247, 255, 0.3);
+    }
+    
+    .trajectory-card.active {
+      border-color: var(--neon-green);
+      box-shadow: 0 0 15px rgba(0, 255, 157, 0.4);
+    }
+    
+    @keyframes pulse {
+      0% { opacity: 0.5; }
+      50% { opacity: 1; }
+      100% { opacity: 0.5; }
+    }
+    
+    .pulse {
+      animation: pulse 2s infinite;
+    }
+.neon-text {
+  text-shadow: 0 0 5px #00f7ff, 0 0 10px #00f7ff;
+}
+.energy-display {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid #00ff9d;
+  border-radius: 8px;
+  padding: 10px 15px;
+  font-size: 1.2rem;
+  text-align: center;
+  color: #00ff9d;
+  box-shadow: 0 0 10px rgba(0, 255, 157, 0.2);
+}

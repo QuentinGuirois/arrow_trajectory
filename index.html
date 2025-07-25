@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simulateur Trajectoire Flèche | Archery Ballistics</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'dark-bg': '#0f172a',
+            'card-bg': 'rgba(30, 41, 59, 0.7)',
+            'neon-blue': '#00f7ff',
+            'neon-purple': '#bd00ff',
+            'neon-green': '#00ff9d',
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="stylesheet" href="style-extra.css">
+</head>
+<body>
+  <div class="min-h-screen relative">
+    <!-- Decorative elements -->
+    <div class="absolute top-20 right-10 w-64 h-64 rounded-full bg-purple-500 opacity-10 blur-3xl"></div>
+    <div class="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-cyan-500 opacity-10 blur-3xl"></div>
+    <div class="container mx-auto px-4 py-8 max-w-7xl">
+      <!-- Header -->
+      <header class="text-center mb-10">
+        <div class="flex items-center justify-center mb-4">
+          <div class="w-12 h-12 rounded-full bg-cyan-500 flex items-center justify-center mr-4">
+            <i class="fas fa-bullseye text-white text-xl"></i>
+          </div>
+          <h1 class="text-4xl md:text-5xl font-bold neon-text">ARCHERY BALLISTICS</h1>
+        </div>
+        <p class="text-lg text-cyan-300 max-w-2xl mx-auto">Simulateur avancé de trajectoire de flèche avec modélisation physique en temps réel</p>
+      </header>
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Panel - Parameters -->
+        <div class="lg:col-span-1">
+          <div class="card-glass p-6 relative overflow-hidden">
+            <div class="grid-lines"></div>
+            <div class="relative z-10">
+              <h2 class="text-2xl font-bold mb-6 flex items-center">
+                <i class="fas fa-sliders-h mr-3 text-cyan-400"></i>
+                PARAMÈTRES DE TIR
+              </h2>
+              <form id="params" class="space-y-5">
+                <div>
+                  <label class="block text-sm font-medium mb-2 text-cyan-300">Poids flèche (g)</label>
+                  <div class="relative">
+                    <input type="number" id="poidsGr" value="25" min="10" max="35" step="0.1" class="w-full input-field py-3 px-4 rounded-lg">
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 text-cyan-400"><i class="fas fa-weight-hanging"></i></div>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-2 text-cyan-300">Vitesse initiale (fps)</label>
+                  <div class="relative">
+                    <input type="number" id="fps" value="200" min="100" max="500" step="1" class="w-full input-field py-3 px-4 rounded-lg">
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 text-cyan-400"><i class="fas fa-tachometer-alt"></i></div>
+                  </div>
+                </div>
+                <div class="energy-display">
+                  <div class="flex justify-between items-center">
+                    <span>Énergie initiale:</span>
+                    <span id="energyInit" class="font-bold">24.5 J</span>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-2 text-cyan-300">Diamètre (mm)</label>
+                  <div class="relative">
+                    <input type="number" id="diameter" value="7" min="5" max="9" step="0.1" class="w-full input-field py-3 px-4 rounded-lg">
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 text-cyan-400"><i class="fas fa-arrows-alt-h"></i></div>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-2 text-cyan-300">Type de plumes</label>
+                  <div class="relative">
+                    <select id="plumeType" class="w-full input-field py-3 px-4 rounded-lg appearance-none">
+                      <option value="petite">Petite droite</option>
+                      <option value="moyenne" selected>Moyenne</option>
+                      <option value="grande">Grande</option>
+                      <option value="hélicoïdale">Hélicoïdale</option>
+                    </select>
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 text-cyan-400"><i class="fas fa-feather"></i></div>
+                  </div>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium mb-2 text-cyan-300">Angle de tir (°)</label>
+                  <div class="relative">
+                    <input type="number" id="angleDeg" value="0" min="-10" max="45" step="0.1" class="w-full input-field py-3 px-4 rounded-lg">
+                    <div class="absolute inset-y-0 right-0 flex items-center pr-3 text-cyan-400"><i class="fas fa-angle-up"></i></div>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium mb-2 text-cyan-300">Pression (hPa)</label>
+                    <div class="relative">
+                      <input type="number" id="pressureHpa" value="1020" min="900" max="1100" class="w-full input-field py-3 px-4 rounded-lg">
+                      <div class="absolute inset-y-0 right-0 flex items-center pr-3 text-cyan-400"><i class="fas fa-tachometer-alt"></i></div>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2 text-cyan-300">Température (°C)</label>
+                    <div class="relative">
+                      <input type="number" id="temperatureCelsius" value="20" min="-10" max="40" class="w-full input-field py-3 px-4 rounded-lg">
+                      <div class="absolute inset-y-0 right-0 flex items-center pr-3 text-cyan-400"><i class="fas fa-thermometer-half"></i></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium mb-2 text-cyan-300">Offset visée (cm)</label>
+                    <div class="relative">
+                      <input type="number" id="scopeOffset" value="5" min="0" max="20" step="0.1" class="w-full input-field py-3 px-4 rounded-lg">
+                      <div class="absolute inset-y-0 right-0 flex items-center pr-3 text-cyan-400"><i class="fas fa-ruler"></i></div>
+                    </div>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium mb-2 text-cyan-300">Angle visée (°)</label>
+                    <div class="relative">
+                      <input type="number" id="scopeAngleDeg" value="0" min="-5" max="5" step="0.1" class="w-full input-field py-3 px-4 rounded-lg">
+                      <div class="absolute inset-y-0 right-0 flex items-center pr-3 text-cyan-400"><i class="fas fa-angle-right"></i></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="grid grid-cols-3 gap-3 pt-4">
+                  <button type="button" id="runBtn" class="btn-neon py-3 rounded-lg font-bold"><i class="fas fa-play mr-2"></i>Calculer</button>
+                  <button type="button" id="saveCurve" class="btn-neon-secondary py-3 rounded-lg font-bold"><i class="fas fa-save mr-2"></i>Enregistrer</button>
+                  <button type="button" id="resetCurves" class="btn-neon-secondary py-3 rounded-lg font-bold"><i class="fas fa-share-alt mr-2"></i>Partager</button>
+                </div>
+              </form>
+            </div>
+          </div>
+          <!-- Saved Trajectories -->
+          <div class="card-glass p-6 mt-8 relative overflow-hidden">
+            <div class="grid-lines"></div>
+            <div class="relative z-10">
+              <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-history mr-3 text-purple-400"></i>
+                TRAJECTOIRES ENREGISTRÉES
+              </h2>
+              <div class="space-y-3" id="savedCurves"></div>
+            </div>
+          </div>
+        </div>
+        <!-- Right Panel - Visualization -->
+        <div class="lg:col-span-2">
+          <div class="card-glass p-6 relative overflow-hidden">
+            <div class="grid-lines"></div>
+            <div class="trajectory-glow"></div>
+            <div class="relative z-10">
+              <div class="flex justify-between items-center mb-6">
+                <h2 class="text-2xl font-bold flex items-center">
+                  <i class="fas fa-project-diagram mr-3 text-purple-400"></i>
+                  VISUALISATION DE TRAJECTOIRE
+                </h2>
+                <div class="tabs flex gap-4">
+                  <button class="tab-active font-medium" id="tab2d">2D</button>
+                  <button class="text-gray-400 hover:text-cyan-300 transition" id="tabEnergy">Énergie</button>
+                  <button class="text-gray-400 hover:text-cyan-300 transition" id="tabTime">Temps</button>
+                  <button class="text-gray-400 hover:text-cyan-300 transition" id="tabHoldover">Holdover</button>
+                </div>
+              </div>
+              <div class="chart-container bg-gray-900/50 rounded-xl border border-gray-700 relative" id="chart">
+                <div id="trajectory2D"></div>
+                <div id="energyChart" style="display:none;"></div>
+                <div id="timeChart" style="display:none;"></div>
+                <div id="holdoverChart" style="display:none;"></div>
+              </div>
+              <!-- Stats Panel -->
+              <div class="grid grid-cols-4 gap-4 mt-6" id="statsPanel"></div>
+            </div>
+          </div>
+          <!-- Archery Tips -->
+          <div class="card-glass p-6 mt-8">
+            <h2 class="text-2xl font-bold mb-4 flex items-center">
+              <i class="fas fa-lightbulb mr-3 text-yellow-400"></i>
+              CONSEILS D'EXPERTS
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="flex items-start">
+                <div class="bg-cyan-500/10 p-3 rounded-lg mr-3"><i class="fas fa-wind text-cyan-400"></i></div>
+                <div>
+                  <div class="font-bold text-cyan-300">Effet du vent</div>
+                  <p class="text-sm text-gray-400">Un vent de 10 km/h peut dévier votre flèche de 15cm à 50m</p>
+                </div>
+              </div>
+              <div class="flex items-start">
+                <div class="bg-green-500/10 p-3 rounded-lg mr-3"><i class="fas fa-weight-hanging text-green-400"></i></div>
+                <div>
+                  <div class="font-bold text-green-300">Poids de flèche</div>
+                  <p class="text-sm text-gray-400">Des flèches plus lourdes résistent mieux au vent mais perdent en vitesse</p>
+                </div>
+              </div>
+              <div class="flex items-start">
+                <div class="bg-purple-500/10 p-3 rounded-lg mr-3"><i class="fas fa-thermometer-half text-purple-400"></i></div>
+                <div>
+                  <div class="font-bold text-purple-300">Température</div>
+                  <p class="text-sm text-gray-400">Pour chaque 10°C de baisse, augmentez votre visée de 2cm à 50m</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <!-- Footer -->
+      <footer class="mt-12 text-center text-gray-500 text-sm">
+        <div class="flex flex-wrap justify-center gap-6 mb-4">
+          <a href="#" class="hover:text-cyan-400 transition"><i class="fas fa-book mr-2"></i>Documentation</a>
+          <a href="#" class="hover:text-cyan-400 transition"><i class="fas fa-download mr-2"></i>Export PDF</a>
+          <a href="#" class="hover:text-cyan-400 transition"><i class="fas fa-share-alt mr-2"></i>Partager</a>
+          <a href="#" class="hover:text-cyan-400 transition"><i class="fas fa-cog mr-2"></i>Paramètres</a>
+        </div>
+        <p>Archery Ballistics Simulator v2.0 © 2023 | Tous droits réservés</p>
+      </footer>
+    </div>
+  </div>
+  <script type="module" src="script-archery.js"></script>
+</body>
+</html>
