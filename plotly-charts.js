@@ -1,7 +1,8 @@
-// plotly-charts.js
-// Construction et rendu des graphes Plotly: 2D, énergie, temps, holdover, 3D, dérive, tuning et AoA.
+﻿// plotly-charts.js
+// Construction et rendu des graphes Plotly: 2D, Ã©nergie, temps, holdover, 3D, dÃ©rive, tuning et AoA.
 
 import { buildSightMarks } from './calibration.js';
+import { interpolatePointAtDistance } from './util.js';
 
 const Plotly = window.Plotly;
 
@@ -24,6 +25,17 @@ export function showTab(tab) {
     aoaChart: 'tabAoa'
   };
   document.getElementById(map[tab])?.classList.add('tab-active');
+  resizeCharts();
+}
+
+export function resizeCharts() {
+  chartIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (el?.data) {
+      const resize = Plotly.Plots.resize(el);
+      if (resize?.catch) resize.catch(() => {});
+    }
+  });
 }
 
 export function purgeCharts() {
@@ -52,19 +64,19 @@ export function renderAllCharts(curves) {
     const { curveData, color, label, params } = curve;
     traces2d.push(trace2d(curveData, color, label));
     if (params.dispersionEnabled) traces2d.push(traceDispersion2d(curveData, color, `${label} dispersion`));
-    energy.push(traceDistance(curveData, color, label, 'energy', 'Énergie', 'J'));
+    energy.push(traceDistance(curveData, color, label, 'energy', 'Ã‰nergie', 'J'));
     time.push(traceDistance(curveData, color, label, 'time', 'Temps', 's'));
     hold.push(traceHoldover(curveData, params, color, label));
     traces3d.push(trace3d(curveData, color, label));
-    if (params.dispersionEnabled) traces3d.push(traceDispersion3d(curveData, color, `${label} cône`));
-    drift.push(traceDistance(curveData, color, label, 'driftCm', 'Dérive', 'cm'));
+    if (params.dispersionEnabled) traces3d.push(traceDispersion3d(curveData, color, `${label} cÃ´ne`));
+    drift.push(traceDistance(curveData, color, label, 'driftCm', 'DÃ©rive', 'cm'));
     tuning.push(...traceTuning(curveData, color, label));
-    aoa.push(traceDistance(curveData, color, label, 'aoaDeg', 'Angle d’attaque', '°'));
+    aoa.push(traceDistance(curveData, color, label, 'aoaDeg', 'AoA proxy', '°'));
   });
 
   const common = {
     margin: { l: 44, r: 20, b: 60, t: 30 },
-    height: 420,
+    height: window.innerWidth >= 1280 ? 560 : 420,
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
     legend: { orientation: 'h', xanchor: 'center', x: 0.5, y: -0.2, font: { color: 'white', size: 10 } },
@@ -78,21 +90,24 @@ export function renderAllCharts(curves) {
     xaxis: axis('Distance (m)'),
     yaxis: { ...axis('Hauteur (m)'), scaleanchor: 'x', scaleratio: 1 }
   }, config);
-  Plotly.react('energyChart', energy, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Énergie (J)') }, config);
+  Plotly.react('energyChart', energy, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Ã‰nergie (J)') }, config);
   Plotly.react('timeChart', time, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Temps (s)') }, config);
   Plotly.react('holdoverChart', hold, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Holdover (cm)') }, config);
   Plotly.react('trajectory3D', traces3d, {
     ...common,
     scene: {
       xaxis: axis3d('Distance (m)'),
-      yaxis: axis3d('Dérive z (m)'),
+      yaxis: axis3d('DÃ©rive z (m)'),
       zaxis: axis3d('Hauteur (m)'),
+      aspectmode: 'manual',
+      aspectratio: { x: 3.8, y: 0.9, z: 1.15 },
       bgcolor: 'rgba(0,0,0,0)'
     }
   }, config);
-  Plotly.react('driftChart', drift, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Dérive latérale (cm)') }, config);
+  Plotly.react('driftChart', drift, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('DÃ©rive latÃ©rale (cm)') }, config);
   Plotly.react('tuningChart', tuning, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Oscillation (cm)') }, config);
-  Plotly.react('aoaChart', aoa, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Angle d’attaque (°)') }, config);
+  Plotly.react('aoaChart', aoa, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('AoA proxy diagnostic (Â°)') }, config);
+  resizeCharts();
 }
 
 function axis(title) {
@@ -111,7 +126,7 @@ function trace2d(points, color, label) {
     type: 'scattergl',
     name: label,
     line: { width: 1.8, color },
-    text: points.map(p => `<b>${label}</b><br>Distance: ${p.x.toFixed(1)} m<br>Hauteur: ${p.y.toFixed(2)} m<br>Dérive: ${(p.z * 100).toFixed(1)} cm<br>Énergie: ${p.energy.toFixed(1)} J`),
+    text: points.map(p => `<b>${label}</b><br>Distance: ${p.x.toFixed(1)} m<br>Hauteur: ${p.y.toFixed(2)} m<br>DÃ©rive: ${(p.z * 100).toFixed(1)} cm<br>Ã‰nergie: ${p.energy.toFixed(1)} J`),
     hoverinfo: 'text'
   };
 }
@@ -125,7 +140,8 @@ function trace3d(points, color, label) {
     type: 'scatter3d',
     name: label,
     line: { width: 4, color },
-    hoverinfo: 'name+x+y+z'
+    text: points.map(p => `<b>${label}</b><br>Distance: ${p.x.toFixed(1)} m<br>Hauteur: ${p.y.toFixed(2)} m<br>Dérive: ${(p.z * 100).toFixed(1)} cm<br>Énergie: ${p.energy.toFixed(1)} J`),
+    hoverinfo: 'text'
   };
 }
 
@@ -188,7 +204,7 @@ function traceHoldover(points, params, color, label) {
     type: 'scattergl',
     name: label,
     line: { width: 2, color },
-    text: marks.map(p => `<b>${label}</b><br>Distance: ${p.distance} m<br>Holdover: ${p.holdoverCm.toFixed(1)} cm<br>Dérive: ${p.driftCm.toFixed(1)} cm`),
+    text: marks.map(p => `<b>${label}</b><br>Distance: ${p.distance} m<br>Holdover: ${p.holdoverCm.toFixed(1)} cm<br>DÃ©rive: ${p.driftCm.toFixed(1)} cm`),
     hoverinfo: 'text'
   };
 }
@@ -216,14 +232,7 @@ function traceTuning(points, color, label) {
 
 function sampleAtDistances(points) {
   const distances = Array.from({ length: 21 }, (_, i) => i * 5);
-  const out = [];
-  let idx = 0;
-  for (const p of points) {
-    while (idx < distances.length && p.x >= distances[idx]) {
-      out.push({ ...p, distance: distances[idx] });
-      idx++;
-    }
-    if (idx >= distances.length) break;
-  }
-  return out;
+  return distances
+    .map(distance => interpolatePointAtDistance(points, distance))
+    .filter(Boolean);
 }

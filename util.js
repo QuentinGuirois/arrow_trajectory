@@ -14,3 +14,23 @@ export function debounce(fn, wait = 300) {
     timer = setTimeout(() => fn(...args), wait);
   };
 }
+
+export function interpolatePointAtDistance(points, distance) {
+  if (!points?.length) return null;
+  if (distance <= points[0].x) return { ...points[0], distance };
+  for (let i = 1; i < points.length; i++) {
+    const a = points[i - 1];
+    const b = points[i];
+    if (b.x >= distance) {
+      const t = (distance - a.x) / Math.max(0.000001, b.x - a.x);
+      const out = { distance };
+      Object.keys(b).forEach(key => {
+        if (typeof a[key] === 'number' && typeof b[key] === 'number') {
+          out[key] = a[key] + (b[key] - a[key]) * t;
+        }
+      });
+      return out;
+    }
+  }
+  return null;
+}

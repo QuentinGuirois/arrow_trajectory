@@ -1,83 +1,95 @@
 # Arrow Trajectory
 
-Simulateur navigateur vanilla JavaScript pour trajectoire, tuning et comparaison de setups d’archerie.
+Simulateur web vanilla JavaScript + Plotly + Web Worker pour trajectoire de flèche, comparaison de setups et diagnostics avancés.
 
 ## Lancer le projet
 
-Le projet utilise des modules ES et un Web Worker module. Lancez-le avec un serveur local, par exemple :
+Le projet utilise des modules ES et un Web Worker module. Il doit être servi par un serveur local :
 
 ```bash
 python -m http.server 8080
 ```
 
-Puis ouvrez `http://localhost:8080`.
+Ou avec l’extension Live Server de votre éditeur.
+
+## Modes
+
+### Mode simple
+
+Affiche uniquement les fondamentaux :
+
+- nom du setup et preset ;
+- type d’arc ;
+- vitesse chrono / initiale ;
+- masse totale, diamètre, angle de tir ;
+- offset et angle de visée ;
+- vent, direction et température ;
+- énergie initiale ;
+- boutons Enregistrer, Partager, Effacer.
+
+Toute modification recalcule automatiquement les graphes et les stats après un court debounce.
+
+### Mode avancé
+
+Ajoute les paramètres techniques utiles :
+
+- masse par composants GPI ;
+- longueur de flèche, composants, vanes, fletching ;
+- spine statique saisi ;
+- draw weight / draw length ;
+- champs compound informatifs ;
+- environnement avancé ;
+- tuning et dispersion expérimentale.
+
+## Vitesse
+
+La vitesse `fps` saisie est la vérité principale du modèle.
+
+Si la vitesse est mesurée au chronographe, elle ne doit pas être recalculée depuis la masse de flèche. La masse influence l’énergie, le momentum, la traînée et la trajectoire, mais pas la vitesse chrono saisie.
+
+## Spine
+
+Le spine statique moderne est une mesure de déflexion du tube.
+
+- nombre bas = tube plus raide ;
+- nombre haut = tube plus souple ;
+- augmenter la puissance demande généralement un tube plus raide ;
+- allonger la flèche ou alourdir la pointe assouplit le comportement dynamique ;
+- raccourcir la flèche ou alléger la pointe rigidifie le comportement dynamique.
+
+Le simulateur ne produit aucune recommandation spine chiffrée sans table fabricant vérifiée. Le fichier `spine-tables.js` contient uniquement une structure prête à recevoir des tables réelles. Tant qu’aucune table n’est chargée, l’UI affiche : donnée non disponible / table non chargée.
 
 ## Architecture
 
-- `index.html` : interface française, sections d’inputs, onglets Plotly, panneaux de stats et de diagnostics.
-- `script-archery.js` : orchestration UI, lecture du formulaire, Worker, localStorage, partage URL et Three.js optionnel.
-- `state.js` : état applicatif, valeurs par défaut, couleurs et presets.
+- `index.html` : interface française, mode simple/avancé et conteneurs Plotly.
+- `script-archery.js` : orchestration UI, recalcul debouncé, Worker, partage et sauvegarde.
+- `state.js` : valeurs par défaut, presets indicatifs, état applicatif.
 - `units.js` : conversions et helpers numériques.
-- `arrow-builder.js` : masse, FOC, surface frontale, spine dynamique proxy, stabilité et avertissements.
-- `calibration.js` : calibration chrono, estimation par deux sight marks et estimation par repère géométrique.
-- `tuning-diagnostics.js` : porpoising/fishtailing par deux oscillateurs amortis.
-- `physics-advanced.js` : densité air enrichie, vent vectoriel, Cd variable, force-allonge expérimentale.
-- `trajectory.worker-archery.js` : solveur balistique 3D hors thread principal.
-- `plotly-charts.js` : rendu des graphes 2D, 3D, énergie, temps, holdover, dérive, tuning, AoA.
-- `three-overlay.js` : animation procédurale optionnelle d’une flèche 3D via Three.js CDN.
-- `share-schema.js` : partage URL versionné et sauvegarde localStorage.
-- `physics-archery.js` : compatibilité avec l’ancien modèle.
-- `util.js` : helpers génériques.
-- `style-extra.css` : thème visuel existant avec ajouts pour sections et panneaux dérivés.
+- `arrow-builder.js` : masse, FOC, surface frontale, données de spine sans recommandation inventée.
+- `spine-tables.js` : structure de tables fabricant vérifiées, vide par défaut.
+- `calibration.js` : vitesse chrono/utilisateur et sight marks par interpolation.
+- `tuning-diagnostics.js` : porpoising/fishtailing comparatifs.
+- `physics-advanced.js` : densité air, vent, Cd simplifié avec Reynolds corrigé.
+- `trajectory.worker-archery.js` : solveur 3D dans Web Worker.
+- `plotly-charts.js` : graphes Plotly.
+- `share-schema.js` : partage URL versionné et localStorage.
+- `style-extra.css` : thème futuriste et layout.
 
-## Utilisation
+## 3D et dérive
 
-1. Choisir un preset ou remplir le setup.
-2. Ajuster Basique / Flèche / Arc / Environnement.
-3. Utiliser `Simple` pour les champs essentiels ou `Avancé` pour calibration, tuning et force-allonge.
-4. Cliquer `Calculer` pour sauvegarder et comparer la courbe.
-5. Utiliser les onglets `2D`, `Énergie`, `Temps`, `Holdover`, `3D`, `Dérive`, `Tuning`, `AoA`.
-6. `Partager` copie une URL avec schéma versionné.
+Le graphe 3D Plotly affiche la trajectoire du centre de masse :
 
-## Physique simplifiée
+- X = distance en mètres ;
+- Y = dérive latérale en mètres ;
+- Z = hauteur en mètres.
 
-Le solveur est 3D : position `x/y/z`, vitesse `vx/vy/vz`, gravité, vent vectoriel et densité d’air depuis pression, température, humidité et altitude. Le Cd dépend du diamètre, de la configuration de vanes, d’un proxy Reynolds, de la vitesse et d’un proxy d’angle d’attaque.
-
-Le constructeur de flèche calcule :
-
-- masse totale ou masse depuis GPI + composants ;
-- FOC depuis point d’équilibre ou estimation par composants ;
-- facteur de spine dynamique proxy ;
-- surface frontale ;
-- score de stabilité ;
-- avertissements de cohérence.
-
-## Tuning
-
-Le porpoising et le fishtailing sont modélisés par deux oscillateurs amortis :
-
-- porpoising : nocking point, sortie verticale et erreur verticale ;
-- fishtailing : spine dynamique, center shot/plunger et erreur latérale ;
-- spin : facteur de stabilisation et d’amortissement, pas cause directe du porpoising.
-
-Ce modèle sert à comparer des tendances. Il ne remplace pas un test papier, bare shaft, walk-back ou group tuning réel.
-
-## Expérimental
-
-Sont explicitement expérimentaux :
-
-- estimation de vitesse depuis sight marks ;
-- estimation depuis repère + géométrie ;
-- force-allonge utilisée pour dériver vitesse de sortie et excitation initiale ;
-- angle d’attaque proxy ;
-- dispersion / cône d’incertitude ;
-- Cd variable approximé ;
-- animation Three.js optionnelle.
+Le tuning ne déforme pas la trajectoire physique. Porpoising, fishtailing et AoA sont des diagnostics séparés.
 
 ## Limites
 
-- Pas de modèle structurel complet de flexion de tube.
-- Pas de gyroscopie réelle ni dynamique 6-DoF.
-- Le vent est un vecteur constant avec rafale simplifiée.
-- Les coefficients aérodynamiques sont calibrables conceptuellement mais pas validés en soufflerie.
-- La calibration chrono reste la référence la plus fiable.
+- Pas de modèle mécanique complet de flexion de flèche.
+- Pas de dynamique 6-DoF.
+- Cd simplifié malgré un Reynolds plus correct.
+- Vent constant avec rafales simplifiées.
+- Les presets sont indicatifs, pas des recommandations professionnelles.
+- Les recommandations spine fiables nécessitent une table fabricant chargée.

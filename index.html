@@ -28,7 +28,7 @@
   <div class="min-h-screen relative">
     <div class="absolute top-20 right-10 w-64 h-64 rounded-full bg-purple-500 opacity-10 blur-3xl"></div>
     <div class="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-cyan-500 opacity-10 blur-3xl"></div>
-    <div class="container mx-auto px-4 py-8 max-w-7xl">
+    <div class="container mx-auto px-4 py-8 max-w-[1800px]">
       <header class="text-center mb-8">
         <div class="flex items-center justify-center mb-4">
           <div class="w-12 h-12 rounded-full bg-cyan-500 flex items-center justify-center mr-4">
@@ -36,18 +36,18 @@
           </div>
           <h1 class="text-4xl md:text-5xl font-bold neon-text">ARCHERY BALLISTICS</h1>
         </div>
-        <p class="text-lg text-cyan-300 max-w-3xl mx-auto">Simulateur avancé de trajectoire, tuning et comparaison de builds d’archerie.</p>
+        <p class="text-lg text-cyan-300 max-w-3xl mx-auto">Simulateur de trajectoire et comparaison de setups. Recalcul automatique à chaque modification.</p>
       </header>
 
-      <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        <div class="lg:col-span-1">
+      <div class="grid grid-cols-1 lg:grid-cols-[420px_minmax(0,1fr)] gap-8">
+        <aside>
           <div class="card-glass p-6 relative overflow-hidden">
             <div class="grid-lines"></div>
             <div class="relative z-10">
               <div class="flex items-start justify-between gap-4 mb-5">
                 <h2 class="text-2xl font-bold flex items-center">
                   <i class="fas fa-sliders-h mr-3 text-cyan-400"></i>
-                  PARAMÈTRES DE TIR
+                  PARAMÈTRES
                 </h2>
                 <select id="uiMode" class="input-field py-2 px-3 rounded-lg text-sm" title="Mode simple ou avancé">
                   <option value="simple">Simple</option>
@@ -56,40 +56,57 @@
               </div>
 
               <form id="params" class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
-                  <div>
-                    <label class="field-label">Nom du setup</label>
-                    <input type="text" id="setupName" value="Setup de base" class="input-field w-full py-3 px-4 rounded-lg" title="Nom utilisé dans la comparaison">
+                <div class="section-card">
+                  <div class="section-grid">
+                    <div>
+                      <label class="field-label">Nom du setup</label>
+                      <input type="text" id="setupName" value="Setup de base" class="input-field w-full py-3 px-4 rounded-lg">
+                    </div>
+                    <div>
+                      <label class="field-label">Preset</label>
+                      <select id="presetSelect" class="input-field w-full py-3 px-4 rounded-lg" title="Preset indicatif, non recommandé pro">
+                        <option value="">Personnalisé</option>
+                        <option value="longbowTraditional">Longbow traditionnel</option>
+                        <option value="recurveLeisure">Recurve loisir</option>
+                        <option value="recurveTarget">Recurve cible</option>
+                        <option value="barebowField">Barebow field</option>
+                        <option value="compoundHunting">Compound hunting</option>
+                        <option value="compoundTarget">Compound target</option>
+                      </select>
+                    </div>
                   </div>
-                  <div>
-                    <label class="field-label">Preset</label>
-                    <select id="presetSelect" class="input-field w-full py-3 px-4 rounded-lg" title="Charge un build de départ">
-                      <option value="">Personnalisé</option>
-                      <option value="recurve70">Recurve cible 70 m</option>
-                      <option value="barebowField">Barebow / field</option>
-                      <option value="compoundHunting">Compound / hunting</option>
-                    </select>
-                  </div>
+                  <div class="text-xs text-gray-400 mt-2">Preset indicatif. La vitesse chrono et les tables fabricant restent prioritaires.</div>
                 </div>
 
                 <details class="section-card" open>
-                  <summary>Basique</summary>
+                  <summary>Essentiel</summary>
                   <div class="section-grid">
                     <div>
-                      <label class="field-label">Vitesse initiale (fps)</label>
-                      <input type="number" id="fps" value="200" min="80" max="420" step="1" class="input-field w-full py-3 px-4 rounded-lg" title="Vitesse de sortie si aucune calibration ne la remplace">
+                      <label class="field-label">Type d’arc</label>
+                      <select id="bowType" class="input-field w-full py-3 px-4 rounded-lg">
+                        <option value="longbow_traditional">Longbow traditionnel</option>
+                        <option value="recurve_leisure">Recurve loisir</option>
+                        <option value="recurve_target">Recurve cible</option>
+                        <option value="barebow_field">Barebow field</option>
+                        <option value="compound_hunting">Compound chasse</option>
+                        <option value="compound_target">Compound cible</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="field-label">Vitesse chrono / initiale (fps)</label>
+                      <input type="number" id="fps" value="190" min="80" max="420" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
                       <label class="field-label">Masse totale flèche (g)</label>
-                      <input type="number" id="poidsGr" value="25" min="10" max="60" step="0.1" class="input-field w-full py-3 px-4 rounded-lg" title="Masse totale mesurée ou issue du builder">
-                    </div>
-                    <div>
-                      <label class="field-label">Angle de tir (°)</label>
-                      <input type="number" id="angleDeg" value="0" min="-10" max="45" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
+                      <input type="number" id="poidsGr" value="25" min="10" max="60" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
                       <label class="field-label">Diamètre (mm)</label>
                       <input type="number" id="diameter" value="7" min="4" max="10" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
+                    </div>
+                    <div>
+                      <label class="field-label">Angle de tir (°)</label>
+                      <input type="number" id="angleDeg" value="0" min="-10" max="45" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
                       <label class="field-label">Offset visée (cm)</label>
@@ -98,6 +115,18 @@
                     <div>
                       <label class="field-label">Angle visée (°)</label>
                       <input type="number" id="scopeAngleDeg" value="0" min="-6" max="6" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
+                    </div>
+                    <div>
+                      <label class="field-label">Température (°C)</label>
+                      <input type="number" id="temperatureCelsius" value="20" min="-20" max="45" step="0.5" class="input-field w-full py-3 px-4 rounded-lg">
+                    </div>
+                    <div>
+                      <label class="field-label">Vent vitesse (km/h)</label>
+                      <input type="number" id="windSpeedKmh" value="0" min="0" max="80" step="0.5" class="input-field w-full py-3 px-4 rounded-lg">
+                    </div>
+                    <div>
+                      <label class="field-label">Vent direction (°)</label>
+                      <input type="number" id="windDirectionDeg" value="0" min="0" max="360" step="1" class="input-field w-full py-3 px-4 rounded-lg" title="0 = face, 90 = latéral simplifié">
                     </div>
                   </div>
                   <div class="energy-display mt-3">
@@ -108,14 +137,14 @@
                   </div>
                 </details>
 
-                <details class="section-card" open>
-                  <summary>Flèche</summary>
+                <details class="section-card advanced-field">
+                  <summary>Flèche avancée</summary>
                   <div class="section-grid">
                     <div>
                       <label class="field-label">Mode masse</label>
-                      <select id="massMode" class="input-field w-full py-3 px-4 rounded-lg" title="Total mesuré ou calcul depuis GPI/composants">
+                      <select id="massMode" class="input-field w-full py-3 px-4 rounded-lg">
                         <option value="total">Masse totale mesurée</option>
-                        <option value="gpi">GPI + composants</option>
+                        <option value="components">GPI + composants</option>
                       </select>
                     </div>
                     <div>
@@ -123,34 +152,34 @@
                       <input type="number" id="arrowLengthIn" value="29" min="20" max="34" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
-                      <label class="field-label">Spine statique</label>
+                      <label class="field-label">Spine statique saisi</label>
                       <input type="number" id="spineStatic" value="600" min="250" max="1200" step="10" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
-                    <div>
+                    <div class="component-only">
                       <label class="field-label">Shaft GPI</label>
                       <input type="number" id="shaftGpi" value="7.4" min="3" max="15" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
-                    <div>
+                    <div class="component-only">
                       <label class="field-label">Pointe (grains)</label>
                       <input type="number" id="pointWeightGrains" value="100" min="40" max="250" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
-                    <div>
+                    <div class="component-only">
                       <label class="field-label">Insert / outsert (grains)</label>
                       <input type="number" id="insertWeightGrains" value="12" min="0" max="120" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
-                    <div>
+                    <div class="component-only">
                       <label class="field-label">Nock (grains)</label>
                       <input type="number" id="nockWeightGrains" value="10" min="2" max="30" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
-                    <div>
+                    <div class="component-only">
                       <label class="field-label">Nombre de vanes</label>
                       <input type="number" id="vaneCount" value="3" min="2" max="4" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
-                    <div>
+                    <div class="component-only">
                       <label class="field-label">Longueur vane (in)</label>
                       <input type="number" id="vaneLengthIn" value="1.75" min="1" max="5" step="0.05" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
-                    <div>
+                    <div class="component-only">
                       <label class="field-label">Profil vane</label>
                       <select id="vaneProfile" class="input-field w-full py-3 px-4 rounded-lg">
                         <option value="low">Low</option>
@@ -158,7 +187,7 @@
                         <option value="high">High</option>
                       </select>
                     </div>
-                    <div>
+                    <div class="component-only">
                       <label class="field-label">Orientation fletching</label>
                       <select id="fletchingOrientation" class="input-field w-full py-3 px-4 rounded-lg">
                         <option value="straight">Straight</option>
@@ -166,43 +195,22 @@
                         <option value="helical">Helical</option>
                       </select>
                     </div>
-                    <div>
+                    <div class="component-only">
                       <label class="field-label">Angle offset/helical (°)</label>
                       <input type="number" id="fletchingAngleDeg" value="0" min="0" max="5" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
-                    <div>
-                      <label class="field-label">Point d’équilibre (in)</label>
-                      <input type="number" id="balancePointIn" value="17" min="0" max="34" step="0.1" class="input-field w-full py-3 px-4 rounded-lg" title="Mesuré depuis le nock. 0 = estimation par composants">
-                    </div>
-                    <div>
-                      <label class="field-label">FOC (%)</label>
-                      <input type="number" id="focPercent" value="10" min="0" max="25" step="0.1" class="input-field w-full py-3 px-4 rounded-lg" title="Utilisé si point d’équilibre non renseigné">
-                    </div>
-                    <div>
-                      <label class="field-label">Type de plumes legacy</label>
-                      <select id="plumeType" class="input-field w-full py-3 px-4 rounded-lg">
-                        <option value="petite">Petite droite</option>
-                        <option value="moyenne" selected>Moyenne</option>
-                        <option value="grande">Grande</option>
-                        <option value="helicoidale">Hélicoïdale</option>
-                      </select>
+                    <div class="component-only">
+                      <label class="field-label">Point d’équilibre mesuré (in)</label>
+                      <input type="number" id="balancePointIn" value="0" min="0" max="34" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                   </div>
+                  <div class="mass-total-note text-sm text-gray-400 mt-3">Mode masse totale: les composants sont masqués car ils ne pilotent pas la masse.</div>
                   <div id="arrowBuilderPanel" class="derived-panel mt-3"></div>
                 </details>
 
-                <details class="section-card">
-                  <summary>Arc</summary>
+                <details class="section-card advanced-field">
+                  <summary>Arc avancé</summary>
                   <div class="section-grid">
-                    <div>
-                      <label class="field-label">Type d’arc</label>
-                      <select id="bowType" class="input-field w-full py-3 px-4 rounded-lg">
-                        <option value="recurve_target">Recurve cible</option>
-                        <option value="barebow_field">Barebow-field</option>
-                        <option value="compound_target">Compound cible</option>
-                        <option value="compound_hunting">Compound chasse</option>
-                      </select>
-                    </div>
                     <div>
                       <label class="field-label">Décoche</label>
                       <select id="releaseType" class="input-field w-full py-3 px-4 rounded-lg">
@@ -211,45 +219,32 @@
                       </select>
                     </div>
                     <div>
-                      <label class="field-label">Latéralité</label>
-                      <select id="handedness" class="input-field w-full py-3 px-4 rounded-lg">
-                        <option value="right">Droitier</option>
-                        <option value="left">Gaucher</option>
-                      </select>
-                    </div>
-                    <div>
                       <label class="field-label">Draw weight (lbs)</label>
-                      <input type="number" id="drawWeightLbs" value="38" min="15" max="90" step="0.5" class="input-field w-full py-3 px-4 rounded-lg">
+                      <input type="number" id="drawWeightLbs" value="35" min="15" max="90" step="0.5" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
                       <label class="field-label">Draw length (in)</label>
                       <input type="number" id="drawLengthIn" value="28" min="20" max="34" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
-                    <div>
-                      <label class="field-label">Brace height (in)</label>
-                      <input type="number" id="braceHeightIn" value="8.5" min="5" max="10" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
-                    </div>
-                    <div class="advanced-field">
+                    <div class="compound-only">
                       <label class="field-label">Let-off compound (%)</label>
                       <input type="number" id="letOffPercent" value="0" min="0" max="90" step="1" class="input-field w-full py-3 px-4 rounded-lg">
+                      <div class="text-xs text-gray-400 mt-1">Informatif: ne modifie pas la trajectoire si la vitesse chrono est saisie.</div>
                     </div>
-                    <div class="advanced-field">
+                    <div class="compound-only">
                       <label class="field-label">Cam aggressiveness</label>
-                      <input type="number" id="camAggressiveness" value="0.4" min="0" max="1" step="0.05" class="input-field w-full py-3 px-4 rounded-lg" title="Proxy 0 doux, 1 agressif">
+                      <input type="number" id="camAggressiveness" value="0.4" min="0" max="1" step="0.05" class="input-field w-full py-3 px-4 rounded-lg">
+                      <div class="text-xs text-gray-400 mt-1">Annotation technique, sans effet sur les courbes en mode chrono.</div>
                     </div>
                   </div>
                 </details>
 
-                <details class="section-card">
-                  <summary>Environnement</summary>
+                <details class="section-card advanced-field">
+                  <summary>Environnement avancé</summary>
                   <div class="section-grid">
                     <div>
                       <label class="field-label">Pression (hPa)</label>
                       <input type="number" id="pressureHpa" value="1020" min="800" max="1100" step="1" class="input-field w-full py-3 px-4 rounded-lg">
-                    </div>
-                    <div>
-                      <label class="field-label">Température (°C)</label>
-                      <input type="number" id="temperatureCelsius" value="20" min="-20" max="45" step="0.5" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
                       <label class="field-label">Humidité (%)</label>
@@ -260,65 +255,15 @@
                       <input type="number" id="altitudeM" value="0" min="-100" max="4000" step="10" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
-                      <label class="field-label">Vent vitesse (km/h)</label>
-                      <input type="number" id="windSpeedKmh" value="0" min="0" max="80" step="0.5" class="input-field w-full py-3 px-4 rounded-lg">
-                    </div>
-                    <div>
-                      <label class="field-label">Vent direction (°)</label>
-                      <input type="number" id="windDirectionDeg" value="0" min="0" max="360" step="1" class="input-field w-full py-3 px-4 rounded-lg" title="0 = face, 90 = vent venant de droite simplifié">
-                    </div>
-                    <div class="advanced-field">
                       <label class="field-label">Rafales (%)</label>
                       <input type="number" id="gustPercent" value="0" min="0" max="80" step="1" class="input-field w-full py-3 px-4 rounded-lg">
-                    </div>
-                  </div>
-                </details>
-
-                <details class="section-card">
-                  <summary>Calibration</summary>
-                  <div class="section-grid">
-                    <div>
-                      <label class="field-label">Mode calibration</label>
-                      <select id="calibrationMode" class="input-field w-full py-3 px-4 rounded-lg">
-                        <option value="chrono">Chronographe</option>
-                        <option value="two_marks">2 sight marks expérimental</option>
-                        <option value="reference_geometry">Repère + géométrie expérimental</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label class="field-label">Chrono (fps)</label>
-                      <input type="number" id="chronoFps" value="200" min="80" max="420" step="1" class="input-field w-full py-3 px-4 rounded-lg">
-                    </div>
-                    <div class="advanced-field">
-                      <label class="field-label">Mark 1 distance (m)</label>
-                      <input type="number" id="sightDistance1M" value="20" min="5" max="100" step="1" class="input-field w-full py-3 px-4 rounded-lg">
-                    </div>
-                    <div class="advanced-field">
-                      <label class="field-label">Mark 1 hold (cm)</label>
-                      <input type="number" id="sightHold1Cm" value="0" min="-300" max="300" step="1" class="input-field w-full py-3 px-4 rounded-lg">
-                    </div>
-                    <div class="advanced-field">
-                      <label class="field-label">Mark 2 distance (m)</label>
-                      <input type="number" id="sightDistance2M" value="50" min="5" max="120" step="1" class="input-field w-full py-3 px-4 rounded-lg">
-                    </div>
-                    <div class="advanced-field">
-                      <label class="field-label">Mark 2 hold (cm)</label>
-                      <input type="number" id="sightHold2Cm" value="-80" min="-400" max="400" step="1" class="input-field w-full py-3 px-4 rounded-lg">
-                    </div>
-                    <div class="advanced-field">
-                      <label class="field-label">Référence distance (m)</label>
-                      <input type="number" id="referenceDistanceM" value="30" min="5" max="100" step="1" class="input-field w-full py-3 px-4 rounded-lg">
-                    </div>
-                    <div class="advanced-field">
-                      <label class="field-label">Référence drop (cm)</label>
-                      <input type="number" id="referenceDropCm" value="-25" min="-300" max="300" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                   </div>
                   <div id="calibrationPanel" class="derived-panel mt-3"></div>
                 </details>
 
-                <details class="section-card">
-                  <summary>Tuning</summary>
+                <details class="section-card advanced-field">
+                  <summary>Tuning / diagnostic</summary>
                   <div class="section-grid">
                     <div>
                       <label class="field-label">Nocking point offset (mm)</label>
@@ -344,43 +289,14 @@
                       <input type="checkbox" id="dispersionEnabled" class="accent-cyan-400">
                       Mode dispersion expérimental
                     </label>
-                    <div class="advanced-field">
-                      <label class="field-label">Tirs dispersion</label>
-                      <input type="number" id="dispersionShots" value="12" min="3" max="50" step="1" class="input-field w-full py-3 px-4 rounded-lg">
-                    </div>
                   </div>
                   <div id="diagnosticsPanel" class="derived-panel mt-3"></div>
                 </details>
 
-                <details class="section-card advanced-field">
-                  <summary>Avancé / expérimental</summary>
-                  <div class="experimental-note mb-3">La courbe force-allonge sert uniquement à dériver la vitesse de sortie et l’excitation initiale.</div>
-                  <div class="section-grid">
-                    <label class="flex items-center gap-2 text-sm text-cyan-200">
-                      <input type="checkbox" id="forceCurveEnabled" class="accent-cyan-400">
-                      Activer courbe force-allonge expérimentale
-                    </label>
-                    <div>
-                      <label class="field-label">Profil force</label>
-                      <select id="forceProfile" class="input-field w-full py-3 px-4 rounded-lg">
-                        <option value="auto">Profil simplifié par type d’arc</option>
-                        <option value="points">3 points saisis</option>
-                      </select>
-                    </div>
-                    <div><label class="field-label">Point 1 draw (in)</label><input type="number" id="forcePoint1DrawIn" value="10" class="input-field w-full py-3 px-4 rounded-lg"></div>
-                    <div><label class="field-label">Point 1 force (lbs)</label><input type="number" id="forcePoint1Lbs" value="12" class="input-field w-full py-3 px-4 rounded-lg"></div>
-                    <div><label class="field-label">Point 2 draw (in)</label><input type="number" id="forcePoint2DrawIn" value="20" class="input-field w-full py-3 px-4 rounded-lg"></div>
-                    <div><label class="field-label">Point 2 force (lbs)</label><input type="number" id="forcePoint2Lbs" value="32" class="input-field w-full py-3 px-4 rounded-lg"></div>
-                    <div><label class="field-label">Point 3 draw (in)</label><input type="number" id="forcePoint3DrawIn" value="28" class="input-field w-full py-3 px-4 rounded-lg"></div>
-                    <div><label class="field-label">Point 3 force (lbs)</label><input type="number" id="forcePoint3Lbs" value="38" class="input-field w-full py-3 px-4 rounded-lg"></div>
-                  </div>
-                </details>
-
-                <div class="grid grid-cols-2 xl:grid-cols-4 gap-3 pt-4">
-                  <button type="button" id="runBtn" class="btn-neon py-3 rounded-lg font-bold"><i class="fas fa-play mr-2"></i>Calculer</button>
-                  <button type="button" id="saveCurve" class="btn-neon-secondary py-3 rounded-lg font-bold"><i class="fas fa-save mr-2"></i>Enregistrer</button>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
+                  <button type="button" id="saveCurve" class="btn-neon py-3 rounded-lg font-bold"><i class="fas fa-save mr-2"></i>Enregistrer</button>
                   <button type="button" id="shareConfig" class="btn-neon-secondary py-3 rounded-lg font-bold"><i class="fas fa-share-alt mr-2"></i>Partager</button>
-                  <button type="button" id="resetCurves" class="btn-neon-secondary py-3 rounded-lg font-bold"><i class="fas fa-trash-alt mr-2"></i>Effacer</button>
+                  <button type="button" id="resetCurves" class="btn-neon-secondary py-3 rounded-lg font-bold"><i class="fas fa-trash-alt mr-2"></i>Effacer setups</button>
                 </div>
               </form>
             </div>
@@ -396,9 +312,9 @@
               <div class="space-y-3" id="savedCurves"></div>
             </div>
           </div>
-        </div>
+        </aside>
 
-        <div class="lg:col-span-2">
+        <main>
           <div class="card-glass p-6 relative overflow-hidden">
             <div class="grid-lines"></div>
             <div class="trajectory-glow"></div>
@@ -413,10 +329,10 @@
                   <button class="text-gray-400 hover:text-cyan-300 transition" id="tabEnergy">Énergie</button>
                   <button class="text-gray-400 hover:text-cyan-300 transition" id="tabTime">Temps</button>
                   <button class="text-gray-400 hover:text-cyan-300 transition" id="tabHoldover">Holdover</button>
-                  <button class="text-gray-400 hover:text-cyan-300 transition" id="tab3d">3D</button>
                   <button class="text-gray-400 hover:text-cyan-300 transition" id="tabDrift">Dérive</button>
-                  <button class="text-gray-400 hover:text-cyan-300 transition" id="tabTuning">Tuning</button>
-                  <button class="text-gray-400 hover:text-cyan-300 transition" id="tabAoa">AoA</button>
+                  <button class="text-gray-400 hover:text-cyan-300 transition" id="tab3d">3D</button>
+                  <button class="text-gray-400 hover:text-cyan-300 transition advanced-tab" id="tabTuning">Tuning</button>
+                  <button class="text-gray-400 hover:text-cyan-300 transition advanced-tab" id="tabAoa">AoA</button>
                 </div>
               </div>
               <div class="chart-container bg-gray-900/50 rounded-xl border border-gray-700 relative" id="chart">
@@ -424,18 +340,12 @@
                 <div id="energyChart" style="display:none;"></div>
                 <div id="timeChart" style="display:none;"></div>
                 <div id="holdoverChart" style="display:none;"></div>
-                <div id="trajectory3D" style="display:none;"></div>
                 <div id="driftChart" style="display:none;"></div>
+                <div id="trajectory3D" style="display:none;"></div>
                 <div id="tuningChart" style="display:none;"></div>
                 <div id="aoaChart" style="display:none;"></div>
               </div>
-              <div class="flex flex-wrap items-center gap-3 mt-4">
-                <button type="button" id="threeToggle" class="btn-neon-secondary py-2 px-4 rounded-lg font-bold"><i class="fas fa-cube mr-2"></i>Three.js</button>
-                <button type="button" id="threePlay" class="btn-neon-secondary py-2 px-4 rounded-lg font-bold"><i class="fas fa-play mr-2"></i>Play</button>
-                <input id="threeScrub" type="range" min="0" max="100" value="0" class="w-48 accent-cyan-400">
-                <span id="threeStatus" class="text-sm text-gray-400">Animation 3D optionnelle</span>
-              </div>
-              <div id="threeOverlay" class="three-overlay mt-3"></div>
+              <div id="chartNote" class="text-sm text-gray-400 mt-3">La 3D affiche la trajectoire du centre de masse ; la dérive est en mètres sur l’axe latéral.</div>
               <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mt-6" id="statsPanel"></div>
               <div id="sightTablePanel" class="derived-panel mt-4"></div>
             </div>
@@ -447,21 +357,20 @@
               NOTES MODÈLE
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-300">
-              <div>La précision vient d’abord de la calibration chrono ou sight marks.</div>
-              <div>Porpoising et fishtailing sont des oscillateurs amortis: utile pour comparer, pas pour certifier.</div>
-              <div>Vent, Cd variable, AoA et force-allonge sont marqués expérimentaux quand l’hypothèse est forte.</div>
+              <div>La vitesse chrono / initiale saisie est la vérité principale du modèle.</div>
+              <div>Le modèle de porpoising/fishtailing est un indicateur comparatif, pas une simulation mécanique complète de flexion.</div>
+              <div>Le spine recommandé reste indisponible tant qu’aucune table fabricant vérifiée n’est chargée.</div>
             </div>
           </div>
-        </div>
+        </main>
       </div>
 
       <footer class="mt-12 text-center text-gray-500 text-sm">
         <div class="flex flex-wrap justify-center gap-6 mb-4">
           <a href="#readme" class="hover:text-cyan-400 transition"><i class="fas fa-book mr-2"></i>Documentation</a>
           <a href="#" class="hover:text-cyan-400 transition"><i class="fas fa-share-alt mr-2"></i>Partager</a>
-          <a href="#" class="hover:text-cyan-400 transition"><i class="fas fa-cog mr-2"></i>Paramètres</a>
         </div>
-        <p>Archery Ballistics Simulator v3.0 © 2026 | Modèle simplifié pour usage amateur éclairé</p>
+        <p>Archery Ballistics Simulator v3.1 © 2026 | Modèle simplifié pour usage amateur éclairé</p>
       </footer>
     </div>
   </div>

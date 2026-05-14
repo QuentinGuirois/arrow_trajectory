@@ -31,19 +31,37 @@ function solveTrajectory3D(params) {
   let vz = velocity.z;
   let time = 0;
   const positions = [];
+  const initialSpeed = Math.hypot(vx, vy, vz);
+  const initialTune = oscillationAt(0, tuning);
+  positions.push(buildPoint({
+    x,
+    y,
+    z,
+    vx,
+    vy,
+    vz,
+    time,
+    arrow,
+    speed: initialSpeed,
+    tune: initialTune,
+    aoaRad: estimateDiagnosticAoaRad(initialTune, initialSpeed),
+    cd: 0,
+    params
+  }));
 
   for (let iter = 0; iter < maxIterations; iter++) {
     if (y < 0) break;
     const prev = { x, y, z, time };
     const relVx = vx - wind.x;
     const relVy = vy - wind.y;
-    const relVz = vz - wind.z;
+    const stabilityWindFactor = 1 + Math.max(0, 1.1 - arrow.vaneDragFactor) * 0.15;
+    const relVz = vz - wind.z * stabilityWindFactor;
     const relSpeed = Math.hypot(relVx, relVy, relVz);
     if (relSpeed < 0.05) break;
 
     const tune = oscillationAt(time, tuning);
-    const aoaRad = estimateAoaRad(tune, relSpeed);
-    const cd = computeAdvancedCd(params, arrow, relSpeed, aoaRad);
+    const aoaRad = estimateDiagnosticAoaRad(tune, relSpeed);
+    const cd = computeAdvancedCd(params, arrow, relSpeed, 0, rho);
     const drag = 0.5 * rho * cd * arrow.frontalAreaM2 * relSpeed * relSpeed;
     const ax = -(drag / arrow.totalMassKg) * (relVx / relSpeed);
     const ay = -(drag / arrow.totalMassKg) * (relVy / relSpeed) - PHYSICS_CONSTANTS.gravity;
@@ -53,8 +71,8 @@ function solveTrajectory3D(params) {
     vy += ay * dt;
     vz += az * dt;
     x += vx * dt;
-    y += vy * dt + tune.verticalCm / 100 * 0.002;
-    z += vz * dt + tune.lateralCm / 100 * 0.002;
+    y += vy * dt;
+    z += vz * dt;
     time += dt;
 
     const speed = Math.hypot(vx, vy, vz);
@@ -107,7 +125,7 @@ function buildPoint({ x, y, z, vx, vy, vz, time, arrow, speed, tune, aoaRad, cd,
   };
 }
 
-function estimateAoaRad(tune, speed) {
+function estimateDiagnosticAoaRad(tune, speed) {
   const oscillationSlope = Math.hypot(tune.verticalCm, tune.lateralCm) / 100;
   return Math.min(0.18, oscillationSlope / Math.max(8, speed));
 }
@@ -127,8 +145,7 @@ function calculateStats(points, arrow, finalPoint) {
     driftImpactCm: finalPoint.z * 100,
     impactAngleDeg: Math.atan2(finalPoint.vy, Math.hypot(finalPoint.vx, finalPoint.vz)) * 180 / Math.PI,
     focPercent: arrow.focPercent,
-    dynamicSpineFactor: arrow.dynamicSpineFactor,
-    stabilityScore: arrow.stabilityScore
+    stabilityLabel: arrow.stabilityLabel
   };
 }
 

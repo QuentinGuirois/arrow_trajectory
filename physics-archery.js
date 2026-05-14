@@ -16,13 +16,3 @@ export function calculateAirDensity(tempC, pHpa) {
   const pressurePa = pHpa * 100;
   return pressurePa / (rSpecific * tempK);
 }
-
-export function computeCd(plumeType = 'moyenne') {
-  switch (plumeType) {
-    case 'petite': return 1.5;
-    case 'moyenne': return 1.7;
-    case 'grande': return 2.0;
-    case 'helicoidale': return 2.1;
-    default: return 1.7;
-  }
-}

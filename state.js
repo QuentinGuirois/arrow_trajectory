@@ -1,5 +1,5 @@
 // state.js
-// Etat applicatif, valeurs par défaut et presets métier.
+// État applicatif, valeurs par défaut et presets indicatifs.
 
 export const COLORS = [
   '#43b0f1', '#bd00ff', '#00ff9d', '#ffbe0b',
@@ -9,11 +9,9 @@ export const COLORS = [
 export const DEFAULT_PARAMS = {
   setupName: 'Setup de base',
   uiMode: 'simple',
-  bowType: 'recurve_target',
-  releaseType: 'fingers',
-  handedness: 'right',
+  bowType: 'recurve_leisure',
 
-  fps: 200,
+  fps: 190,
   angleDeg: 0,
   shootingHeight: 1.5,
   scopeOffset: 0.05,
@@ -33,12 +31,11 @@ export const DEFAULT_PARAMS = {
   vaneProfile: 'medium',
   fletchingOrientation: 'straight',
   fletchingAngleDeg: 0,
-  balancePointIn: 17,
-  focPercent: 10,
+  balancePointIn: 0,
 
-  drawWeightLbs: 38,
+  releaseType: 'fingers',
+  drawWeightLbs: 35,
   drawLengthIn: 28,
-  braceHeightIn: 8.5,
   letOffPercent: 0,
   camAggressiveness: 0.4,
 
@@ -50,95 +47,126 @@ export const DEFAULT_PARAMS = {
   windDirectionDeg: 0,
   gustPercent: 0,
 
-  calibrationMode: 'chrono',
-  chronoFps: 200,
-  sightDistance1M: 20,
-  sightHold1Cm: 0,
-  sightDistance2M: 50,
-  sightHold2Cm: -80,
-  referenceDistanceM: 30,
-  referenceDropCm: -25,
-
   nockingPointOffsetMm: 0,
   centerShotMm: 0,
   plungerStiffness: 0.5,
   releaseErrorVerticalMm: 0,
   releaseErrorLateralMm: 0,
-  dispersionEnabled: false,
-  dispersionShots: 12,
-
-  forceCurveEnabled: false,
-  forceProfile: 'auto',
-  forcePoint1DrawIn: 10,
-  forcePoint1Lbs: 12,
-  forcePoint2DrawIn: 20,
-  forcePoint2Lbs: 32,
-  forcePoint3DrawIn: 28,
-  forcePoint3Lbs: 38
+  dispersionEnabled: false
 };
 
 export const PRESETS = {
-  recurve70: {
-    label: 'Recurve cible 70 m',
+  longbowTraditional: {
+    label: 'Longbow traditionnel',
     values: {
-      setupName: 'Recurve cible 70 m',
-      bowType: 'recurve_target',
+      setupName: 'Longbow traditionnel',
+      bowType: 'longbow_traditional',
+      fps: 165,
+      poidsGr: 32,
+      diameter: 0.008,
+      arrowLengthIn: 30,
+      spineStatic: 600,
+      pointWeightGrains: 125,
+      vaneProfile: 'low',
+      fletchingOrientation: 'straight',
       releaseType: 'fingers',
+      drawWeightLbs: 40
+    }
+  },
+  recurveLeisure: {
+    label: 'Recurve loisir',
+    values: {
+      setupName: 'Recurve loisir',
+      bowType: 'recurve_leisure',
+      fps: 180,
+      poidsGr: 26,
+      diameter: 0.007,
+      arrowLengthIn: 29,
+      spineStatic: 700,
+      pointWeightGrains: 100,
+      vaneProfile: 'medium',
+      releaseType: 'fingers',
+      drawWeightLbs: 30
+    }
+  },
+  recurveTarget: {
+    label: 'Recurve cible',
+    values: {
+      setupName: 'Recurve cible',
+      bowType: 'recurve_target',
       fps: 205,
       poidsGr: 22.5,
+      diameter: 0.0058,
       arrowLengthIn: 29,
       spineStatic: 600,
       shaftGpi: 6.9,
       pointWeightGrains: 100,
-      diameter: 0.0058,
       vaneLengthIn: 1.75,
       vaneProfile: 'low',
-      drawWeightLbs: 40,
-      braceHeightIn: 8.75,
-      focPercent: 11
+      releaseType: 'fingers',
+      drawWeightLbs: 40
     }
   },
   barebowField: {
-    label: 'Barebow / field',
+    label: 'Barebow field',
     values: {
-      setupName: 'Barebow / field',
+      setupName: 'Barebow field',
       bowType: 'barebow_field',
-      releaseType: 'fingers',
       fps: 185,
       poidsGr: 27,
+      diameter: 0.0065,
       arrowLengthIn: 30,
       spineStatic: 500,
       pointWeightGrains: 120,
-      diameter: 0.0065,
       vaneLengthIn: 2,
       vaneProfile: 'medium',
-      drawWeightLbs: 38,
-      braceHeightIn: 8.25,
-      focPercent: 13
+      releaseType: 'fingers',
+      drawWeightLbs: 38
     }
   },
   compoundHunting: {
-    label: 'Compound / hunting',
+    label: 'Compound hunting',
     values: {
-      setupName: 'Compound / hunting',
+      setupName: 'Compound hunting',
       bowType: 'compound_hunting',
-      releaseType: 'mechanical',
       fps: 285,
       poidsGr: 29.5,
+      diameter: 0.0072,
       arrowLengthIn: 28,
       spineStatic: 340,
       pointWeightGrains: 125,
       insertWeightGrains: 30,
-      diameter: 0.0072,
       vaneLengthIn: 2.1,
       vaneProfile: 'high',
       fletchingOrientation: 'helical',
       fletchingAngleDeg: 2,
+      releaseType: 'mechanical',
       drawWeightLbs: 65,
       drawLengthIn: 29,
       letOffPercent: 80,
-      camAggressiveness: 0.75,
-      focPercent: 14
+      camAggressiveness: 0.75
+    }
+  },
+  compoundTarget: {
+    label: 'Compound target',
+    values: {
+      setupName: 'Compound target',
+      bowType: 'compound_target',
+      fps: 275,
+      poidsGr: 25.5,
+      diameter: 0.0062,
+      arrowLengthIn: 28,
+      spineStatic: 400,
+      pointWeightGrains: 100,
+      vaneLengthIn: 1.85,
+      vaneProfile: 'medium',
+      fletchingOrientation: 'offset',
+      fletchingAngleDeg: 1.5,
+      releaseType: 'mechanical',
+      drawWeightLbs: 55,
+      drawLengthIn: 28.5,
+      letOffPercent: 70,
+      camAggressiveness: 0.55
     }
   }
 };
@@ -147,5 +175,6 @@ export const appState = {
   savedCurves: [],
   activeTab: 'trajectory2D',
   requestSeq: 0,
-  lastResult: null
+  lastResult: null,
+  pendingSave: false
 };

@@ -138,10 +138,16 @@
       z-index: -1;
     }
     
-    .chart-container {
-      min-height: 400px;
-      position: relative;
-    }
+.chart-container {
+  min-height: 400px;
+  position: relative;
+}
+
+@media (min-width: 1280px) {
+  .chart-container {
+    min-height: 560px;
+  }
+}
     
     .trajectory-card {
       transition: all 0.3s ease;
@@ -239,13 +245,10 @@
   font-size: 0.85rem;
 }
 
-.three-overlay {
-  min-height: 0;
-  border-radius: 10px;
-  overflow: hidden;
-  background: rgba(15, 23, 42, 0.35);
-}
-
 .advanced-hidden {
   display: none !important;
+}
+
+.chart-container > div {
+  width: 100%;
 }

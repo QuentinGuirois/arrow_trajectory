@@ -7,8 +7,7 @@ export const PHYSICS_CONSTANTS = {
   gravity: 9.80665,
   airGasDry: 287.058,
   airGasVapor: 461.495,
-  airViscosity: 1.81e-5,
-  lbfInToJoule: 0.112984829
+  airViscosity: 1.81e-5
 };
 
 export function calculateAirDensityAdvanced(params) {
@@ -32,9 +31,10 @@ export function windVector(params) {
   };
 }
 
-export function computeAdvancedCd(params, arrow, relativeSpeed, aoaRad) {
-  const reynoldsProxy = Math.max(15000, relativeSpeed * arrow.diameterM / PHYSICS_CONSTANTS.airViscosity);
-  const reynoldsFactor = clamp(1.08 - Math.log10(reynoldsProxy / 50000) * 0.08, 0.82, 1.18);
+export function computeAdvancedCd(params, arrow, relativeSpeed, aoaRad, airDensity = 1.2) {
+  // Cd simplifié: Reynolds plus correct (rho * v * D / mu), puis facteurs empiriques bornés.
+  const reynolds = Math.max(15000, airDensity * relativeSpeed * arrow.diameterM / PHYSICS_CONSTANTS.airViscosity);
+  const reynoldsFactor = clamp(1.08 - Math.log10(reynolds / 50000) * 0.08, 0.82, 1.18);
   const shaftBase = 0.78;
   const diameterFactor = clamp(arrow.diameterM / 0.0065, 0.75, 1.35);
   const vaneFactor = 0.08 * arrow.vaneDragFactor;
@@ -47,43 +47,10 @@ export function computeAdvancedCd(params, arrow, relativeSpeed, aoaRad) {
   return (shaftBase * diameterFactor + vaneFactor + fletchAngleFactor) * reynoldsFactor * aoaFactor;
 }
 
-export function estimateLaunchFromForceCurve(params, arrow) {
-  const efficiency = params.bowType.startsWith('compound') ? 0.82 : 0.72;
-  let storedEnergyJ;
-
-  if (params.forceProfile === 'points') {
-    const pts = [
-      [params.forcePoint1DrawIn, params.forcePoint1Lbs],
-      [params.forcePoint2DrawIn, params.forcePoint2Lbs],
-      [params.forcePoint3DrawIn, params.forcePoint3Lbs]
-    ].sort((a, b) => a[0] - b[0]);
-    storedEnergyJ = 0;
-    for (let i = 1; i < pts.length; i++) {
-      const dx = Math.max(0, pts[i][0] - pts[i - 1][0]);
-      const avgForce = (pts[i][1] + pts[i - 1][1]) / 2;
-      storedEnergyJ += dx * avgForce * PHYSICS_CONSTANTS.lbfInToJoule;
-    }
-  } else {
-    const drawIn = Math.max(10, params.drawLengthIn - params.braceHeightIn);
-    const shapeFactor = params.bowType.startsWith('compound')
-      ? 0.72 + params.camAggressiveness * 0.08
-      : 0.52;
-    storedEnergyJ = drawIn * params.drawWeightLbs * shapeFactor * PHYSICS_CONSTANTS.lbfInToJoule;
-  }
-
-  const speedMps = Math.sqrt(Math.max(0, 2 * storedEnergyJ * efficiency / arrow.totalMassKg));
-  return {
-    fps: speedMps / 0.3048,
-    storedEnergyJ,
-    note: 'Mode expérimental: la courbe force-allonge sert uniquement à dériver la vitesse de sortie.'
-  };
-}
-
 export function buildInitialVelocity(params, launch) {
   const speed = fpsToMetersPerSecond(launch.fps);
   const pitch = params.angleDeg * Math.PI / 180;
-  const lateralSign = params.handedness === 'left' ? -1 : 1;
-  const lateralMps = lateralSign * params.releaseErrorLateralMm * 0.015;
+  const lateralMps = params.releaseErrorLateralMm * 0.015;
   return {
     x: speed * Math.cos(pitch),
     y: speed * Math.sin(pitch) + params.releaseErrorVerticalMm * 0.015,

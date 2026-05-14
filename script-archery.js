@@ -1,23 +1,20 @@
 // script-archery.js
-// Contrôleur UI: lecture formulaire, worker, panels, comparaison, partage et Three optionnel.
+// Contrôleur UI: formulaire, recalcul automatique, worker, comparaison et partage.
 
 import { appState, COLORS, DEFAULT_PARAMS, PRESETS } from './state.js';
 import { buildArrow } from './arrow-builder.js';
 import { resolveLaunch, buildSightMarks } from './calibration.js';
 import { calculateTuningModel } from './tuning-diagnostics.js';
-import { renderAllCharts, purgeCharts, showTab } from './plotly-charts.js';
+import { renderAllCharts, purgeCharts, showTab, resizeCharts } from './plotly-charts.js';
 import { decodeShare, encodeShare, loadSetups, saveSetups } from './share-schema.js';
-import { toggleThreeOverlay, scrubThree, setThreePlaying } from './three-overlay.js';
+import { debounce } from './util.js';
 import { formatNumber, readBool, readNumber } from './units.js';
 
 const trajWorker = new Worker('./trajectory.worker-archery.js', { type: 'module' });
-let threeEnabled = false;
-let threePlaying = true;
-
 const $ = id => document.getElementById(id);
 
 const numericFields = {
-  fps: 200,
+  fps: 190,
   poidsGr: 25,
   diameter: 7,
   angleDeg: 0,
@@ -32,11 +29,9 @@ const numericFields = {
   vaneCount: 3,
   vaneLengthIn: 1.75,
   fletchingAngleDeg: 0,
-  balancePointIn: 17,
-  focPercent: 10,
-  drawWeightLbs: 38,
+  balancePointIn: 0,
+  drawWeightLbs: 35,
   drawLengthIn: 28,
-  braceHeightIn: 8.5,
   letOffPercent: 0,
   camAggressiveness: 0.4,
   pressureHpa: 1020,
@@ -46,31 +41,19 @@ const numericFields = {
   windSpeedKmh: 0,
   windDirectionDeg: 0,
   gustPercent: 0,
-  chronoFps: 200,
-  sightDistance1M: 20,
-  sightHold1Cm: 0,
-  sightDistance2M: 50,
-  sightHold2Cm: -80,
-  referenceDistanceM: 30,
-  referenceDropCm: -25,
   nockingPointOffsetMm: 0,
   centerShotMm: 0,
   plungerStiffness: 0.5,
   releaseErrorVerticalMm: 0,
-  releaseErrorLateralMm: 0,
-  dispersionShots: 12,
-  forcePoint1DrawIn: 10,
-  forcePoint1Lbs: 12,
-  forcePoint2DrawIn: 20,
-  forcePoint2Lbs: 32,
-  forcePoint3DrawIn: 28,
-  forcePoint3Lbs: 38
+  releaseErrorLateralMm: 0
 };
 
 const selectFields = [
-  'uiMode', 'massMode', 'plumeType', 'vaneProfile', 'fletchingOrientation',
-  'bowType', 'releaseType', 'handedness', 'calibrationMode', 'forceProfile'
+  'uiMode', 'massMode', 'vaneProfile', 'fletchingOrientation',
+  'bowType', 'releaseType'
 ];
+
+const formHash = params => JSON.stringify(params);
 
 function getFormValues() {
   const params = { ...DEFAULT_PARAMS };
@@ -82,7 +65,6 @@ function getFormValues() {
     if ($(id)) params[id] = $(id).value;
   });
   params.dispersionEnabled = readBool('dispersionEnabled');
-  params.forceCurveEnabled = readBool('forceCurveEnabled');
   params.diameter = readNumber('diameter', 7) / 1000;
   params.scopeOffset = readNumber('scopeOffset', 5) / 100;
   params.shootingHeight = DEFAULT_PARAMS.shootingHeight;
@@ -103,48 +85,76 @@ function applyParamsToForm(params) {
   });
   if ($('setupName')) $('setupName').value = merged.setupName || DEFAULT_PARAMS.setupName;
   if ($('dispersionEnabled')) $('dispersionEnabled').checked = Boolean(merged.dispersionEnabled);
-  if ($('forceCurveEnabled')) $('forceCurveEnabled').checked = Boolean(merged.forceCurveEnabled);
-  updateMode();
+  updateConditionalFields();
   updateDerivedPanels();
+}
+
+function updateConditionalFields() {
+  const params = getFormValues();
+  const advanced = params.uiMode === 'advanced';
+  const compound = params.bowType.startsWith('compound');
+  const componentsMode = params.massMode === 'components';
+
+  document.querySelectorAll('.advanced-field').forEach(el => el.classList.toggle('advanced-hidden', !advanced));
+  document.querySelectorAll('.advanced-tab').forEach(el => el.classList.toggle('advanced-hidden', !advanced));
+  document.querySelectorAll('.compound-only').forEach(el => el.classList.toggle('advanced-hidden', !(advanced && compound)));
+  document.querySelectorAll('.component-only').forEach(el => el.classList.toggle('advanced-hidden', !(advanced && componentsMode)));
+  document.querySelectorAll('.mass-total-note').forEach(el => el.classList.toggle('advanced-hidden', !(advanced && !componentsMode)));
+
+  if (!advanced && ['tuningChart', 'aoaChart'].includes(appState.activeTab)) {
+    appState.activeTab = 'trajectory2D';
+    showTab('trajectory2D');
+  }
+  resizeCharts();
+}
+
+function updateMode() {
+  updateConditionalFields();
 }
 
 function updateDerivedPanels() {
   const params = getFormValues();
   const arrow = buildArrow(params);
-  const launch = resolveLaunch(params, arrow);
+  const launch = resolveLaunch(params);
   const tuning = calculateTuningModel(params, arrow);
   updateEnergyDisplay(arrow, launch);
-  renderArrowBuilderPanel(arrow);
-  renderCalibrationPanel(launch);
+  renderArrowBuilderPanel(arrow, params);
+  renderLaunchPanel(launch);
   renderDiagnosticsPanel(arrow, tuning);
 }
 
-function updateEnergyDisplay(arrow = buildArrow(getFormValues()), launch = resolveLaunch(getFormValues(), arrow)) {
+function updateEnergyDisplay(arrow = buildArrow(getFormValues()), launch = resolveLaunch(getFormValues())) {
   const energy = 0.5 * arrow.totalMassKg * launch.speedMps * launch.speedMps;
   $('energyInit').textContent = `${formatNumber(energy, 1)} J (${formatNumber(launch.fps, 0)} fps)`;
-  if (getFormValues().massMode === 'gpi') {
+  if (getFormValues().massMode === 'components') {
     $('poidsGr').value = formatNumber(arrow.totalMassGr, 1);
   }
 }
 
-function renderArrowBuilderPanel(arrow) {
+function renderArrowBuilderPanel(arrow, params) {
+  const spine = arrow.spineLookup;
+  const recommendation = spine.confidence === 'table'
+    ? `Recommandé selon ${spine.sourceName}: ${spine.recommendedSpines.join('–')}`
+    : 'Recommandation spine: donnée non disponible / table fabricant non chargée.';
+
   $('arrowBuilderPanel').innerHTML = `
-    <div class="grid grid-cols-2 gap-2">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
       <div>Masse: <b>${formatNumber(arrow.totalMassGr, 1)} g</b> / ${formatNumber(arrow.totalMassGrains, 0)} gr</div>
-      <div>FOC: <b>${formatNumber(arrow.focPercent, 1)}%</b></div>
-      <div>Spine dynamique: <b>${formatNumber(arrow.dynamicSpineFactor, 2)}</b></div>
-      <div>Stabilité: <b>${arrow.stabilityScore}/100</b></div>
+      <div>FOC: <b>${Number.isFinite(arrow.focPercent) ? `${formatNumber(arrow.focPercent, 1)}%` : 'donnée non disponible'}</b></div>
+      <div>Spine statique saisi: <b>${params.spineStatic || 'n/a'}</b> — nombre bas = plus raide.</div>
+      <div>${recommendation}</div>
       <div>Surface frontale: <b>${(arrow.frontalAreaM2 * 1e6).toFixed(1)} mm²</b></div>
-      <div>Spin damping: <b>${formatNumber(arrow.spinStabilization, 2)}</b></div>
+      <div>Stabilité: <b>${arrow.stabilityLabel}</b></div>
     </div>
-    ${arrow.warnings.length ? `<ul class="mt-2 text-yellow-300 list-disc pl-5">${arrow.warnings.map(w => `<li>${w}</li>`).join('')}</ul>` : '<div class="mt-2 text-green-300">Aucun avertissement majeur.</div>'}
+    ${params.massMode === 'total' ? '<div class="mt-2 text-gray-400">Mode masse totale: GPI/composants ne pilotent pas la masse.</div>' : ''}
+    ${arrow.warnings.length ? `<ul class="mt-2 text-yellow-300 list-disc pl-5">${arrow.warnings.map(w => `<li>${w}</li>`).join('')}</ul>` : ''}
   `;
 }
 
-function renderCalibrationPanel(launch) {
+function renderLaunchPanel(launch) {
   $('calibrationPanel').innerHTML = `
-    <div>Vitesse utilisée: <b>${formatNumber(launch.fps, 0)} fps</b> via ${launch.source}${launch.experimental ? ' <span class="text-yellow-300">(expérimental)</span>' : ''}</div>
-    ${launch.notes.length ? `<ul class="mt-2 text-yellow-300 list-disc pl-5">${launch.notes.map(n => `<li>${n}</li>`).join('')}</ul>` : '<div class="mt-2 text-gray-400">Hypothèse principale: vitesse chronographe ou saisie directe.</div>'}
+    <div>Vitesse utilisée: <b>${formatNumber(launch.fps, 0)} fps</b> via ${launch.source}.</div>
+    <div class="text-gray-400 mt-1">${launch.notes[0]}</div>
   `;
 }
 
@@ -158,7 +168,7 @@ function renderDiagnosticsPanel(arrow, tuning) {
         </div>
       `).join('')}
     </div>
-    <div class="mt-2 text-gray-400">Spin utilisé comme stabilisation/amortissement, pas comme cause directe du porpoising.</div>
+    <div class="mt-3 text-gray-400">${arrow.qualitativeTrends.join(' ')}</div>
   `;
 }
 
@@ -181,6 +191,18 @@ function updateStatsPanel(stats = {}) {
   `).join('');
 }
 
+function curvesForDisplay() {
+  const curves = appState.lastResult ? [appState.lastResult] : [];
+  appState.savedCurves.forEach(curve => {
+    if (curve !== appState.lastResult) curves.push(curve);
+  });
+  return curves;
+}
+
+function isSameSetup(a, b) {
+  return formHash(a.params) === formHash(b.params);
+}
+
 function updateSavedCurves() {
   const list = $('savedCurves');
   list.innerHTML = '';
@@ -191,7 +213,7 @@ function updateSavedCurves() {
       <div class="flex justify-between items-center gap-3">
         <div>
           <div class="font-bold" style="color:${curve.color}">${curve.label}</div>
-          <div class="text-sm text-gray-400">${formatNumber(curve.params.fps, 0)} fps, ${formatNumber(curve.arrow.totalMassGr, 1)} g, FOC ${formatNumber(curve.arrow.focPercent, 1)}%</div>
+          <div class="text-sm text-gray-400">${formatNumber(curve.params.fps, 0)} fps, ${formatNumber(curve.arrow.totalMassGr, 1)} g</div>
         </div>
         <div class="flex space-x-2">
           <button class="p-2 text-cyan-400 hover:text-cyan-300" data-index="${i}" data-action="load" title="Charger"><i class="fas fa-eye"></i></button>
@@ -207,17 +229,17 @@ function updateSavedCurves() {
       appState.savedCurves.splice(parseInt(btn.dataset.index, 10), 1);
       saveSetups(appState.savedCurves);
       updateSavedCurves();
-      renderAllCharts(appState.savedCurves);
+      renderAllCharts(curvesForDisplay());
     };
   });
   list.querySelectorAll('button[data-action="load"]').forEach(btn => {
     btn.onclick = () => {
       const curve = appState.savedCurves[parseInt(btn.dataset.index, 10)];
       applyParamsToForm(curve.params);
+      appState.lastResult = curve;
       updateStatsPanel(curve.stats);
-      appState.savedCurves = [curve, ...appState.savedCurves.filter(c => c !== curve)];
-      updateSavedCurves();
-      renderAllCharts(appState.savedCurves);
+      renderSightTable(curve);
+      renderAllCharts(curvesForDisplay());
     };
   });
 }
@@ -231,29 +253,50 @@ function renderSightTable(curve) {
   $('sightTablePanel').innerHTML = `
     <div class="text-cyan-300 font-bold mb-2">Sight marks / holdover</div>
     <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
-      ${marks.map(m => `<div class="bg-slate-950/40 rounded p-2">${m.distance} m<br><b>${formatNumber(m.holdoverCm, 1)} cm</b><br><span class="text-gray-400">drift ${formatNumber(m.driftCm, 1)} cm</span></div>`).join('')}
+      ${marks.map(m => `<div class="bg-slate-950/40 rounded p-2">${m.distance} m<br><b>${formatNumber(m.holdoverCm, 1)} cm</b><br><span class="text-gray-400">dérive ${formatNumber(m.driftCm, 1)} cm</span></div>`).join('')}
     </div>
   `;
 }
 
-function runSim(saveCurve = true) {
+function saveCurrentResult() {
+  const params = getFormValues();
+  if (!appState.lastResult || formHash(appState.lastResult.params) !== formHash(params)) {
+    appState.pendingSave = true;
+    runSim(false);
+    return;
+  }
+  const existing = appState.savedCurves.find(curve => isSameSetup(curve, appState.lastResult));
+  if (!existing) {
+    const saved = {
+      ...appState.lastResult,
+      label: params.setupName || appState.lastResult.label.replace(' (courant)', ''),
+      color: COLORS[appState.savedCurves.length % COLORS.length]
+    };
+    appState.savedCurves.push(saved);
+    appState.lastResult = saved;
+    saveSetups(appState.savedCurves);
+  }
+  updateSavedCurves();
+  renderAllCharts(curvesForDisplay());
+}
+
+function runSim() {
   const params = getFormValues();
   const arrow = buildArrow(params);
-  const launch = resolveLaunch(params, arrow);
+  const launch = resolveLaunch(params);
   params.fps = launch.fps;
   const requestId = ++appState.requestSeq;
-  trajWorker.onmessage = async (e) => {
+  trajWorker.onmessage = (e) => {
     if (e.data.requestId !== requestId) return;
     if (!e.data.ok) {
       console.error('Erreur de simulation:', e.data.error);
       return;
     }
-    const color = COLORS[appState.savedCurves.length % COLORS.length];
-    const label = params.setupName || `${formatNumber(params.fps, 0)} fps, ${formatNumber(arrow.totalMassGr, 1)} g`;
+    const baseLabel = params.setupName || `${formatNumber(params.fps, 0)} fps, ${formatNumber(arrow.totalMassGr, 1)} g`;
     const curve = {
       params,
-      label,
-      color,
+      label: `${baseLabel} (courant)`,
+      color: '#ffffff',
       stats: e.data.stats,
       curveData: e.data.positions,
       arrow: e.data.arrow,
@@ -261,21 +304,23 @@ function runSim(saveCurve = true) {
       tuning: e.data.tuning
     };
     appState.lastResult = curve;
-    if (saveCurve) appState.savedCurves.push(curve);
-    saveSetups(appState.savedCurves);
-    updateSavedCurves();
     updateStatsPanel(curve.stats);
     renderSightTable(curve);
-    renderAllCharts(appState.savedCurves.length ? appState.savedCurves : [curve]);
-    if (threeEnabled) await refreshThree(curve);
+    renderAllCharts(curvesForDisplay());
+    if (appState.pendingSave) {
+      appState.pendingSave = false;
+      saveCurrentResult();
+    }
   };
   trajWorker.postMessage({ type: 'calcTrajArchery', requestId, params });
 }
 
-async function refreshThree(curve = appState.lastResult) {
-  const result = await toggleThreeOverlay('threeOverlay', curve?.curveData || [], threeEnabled);
-  $('threeStatus').textContent = result.ok ? result.message : 'Three.js indisponible, fallback Plotly.';
-}
+const scheduleRecalc = debounce(() => {
+  updateMode();
+  updateConditionalFields();
+  updateDerivedPanels();
+  runSim();
+}, 200);
 
 function shareCurrentConfig() {
   const hash = encodeShare(getFormValues());
@@ -290,45 +335,33 @@ function loadConfigFromUrl() {
   const params = decodeShare(window.location.hash);
   if (!params) return false;
   applyParamsToForm(params);
-  runSim(true);
+  runSim();
   return true;
-}
-
-function updateMode() {
-  const advanced = $('uiMode')?.value === 'advanced';
-  document.querySelectorAll('.advanced-field').forEach(el => {
-    el.classList.toggle('advanced-hidden', !advanced);
-  });
 }
 
 function bindEvents() {
   document.querySelectorAll('#params input, #params select').forEach(el => {
-    el.addEventListener('input', () => {
-      updateMode();
-      updateDerivedPanels();
-    });
-    el.addEventListener('change', () => {
-      updateMode();
-      updateDerivedPanels();
-    });
+    el.addEventListener('input', scheduleRecalc);
+    el.addEventListener('change', scheduleRecalc);
   });
 
   $('presetSelect').onchange = () => {
     const preset = PRESETS[$('presetSelect').value];
-    if (preset) applyParamsToForm(preset.values);
+    if (preset) {
+      applyParamsToForm(preset.values);
+      scheduleRecalc();
+    }
   };
-  $('runBtn').onclick = () => {
-    showTab('trajectory2D');
-    runSim(true);
-  };
-  $('saveCurve').onclick = () => runSim(true);
+  $('saveCurve').onclick = saveCurrentResult;
   $('resetCurves').onclick = () => {
     appState.savedCurves = [];
+    appState.lastResult = null;
     saveSetups([]);
     updateSavedCurves();
     purgeCharts();
     updateStatsPanel();
     renderSightTable(null);
+    runSim();
   };
   $('shareConfig').onclick = shareCurrentConfig;
   document.querySelectorAll('footer .fa-share-alt').forEach(icon => {
@@ -346,24 +379,14 @@ function bindEvents() {
     tabAoa: 'aoaChart'
   };
   Object.entries(tabs).forEach(([buttonId, tabId]) => {
-    $(buttonId).onclick = () => showTab(tabId);
+    $(buttonId).onclick = () => {
+      appState.activeTab = tabId;
+      showTab(tabId);
+      resizeCharts();
+    };
   });
 
-  $('threeToggle').onclick = async () => {
-    threeEnabled = !threeEnabled;
-    await refreshThree();
-  };
-  $('threePlay').onclick = () => {
-    threePlaying = !threePlaying;
-    setThreePlaying(threePlaying);
-    $('threePlay').innerHTML = threePlaying ? '<i class="fas fa-pause mr-2"></i>Pause' : '<i class="fas fa-play mr-2"></i>Play';
-  };
-  $('threeScrub').oninput = () => scrubThree(readNumber('threeScrub', 0) / 100);
-
-  ['trajectory2D', 'energyChart', 'timeChart', 'holdoverChart', 'trajectory3D', 'driftChart', 'tuningChart', 'aoaChart'].forEach(id => {
-    const el = $(id);
-    el?.addEventListener('wheel', e => e.preventDefault(), { passive: false });
-  });
+  window.addEventListener('resize', debounce(resizeCharts, 150));
 }
 
 function bootstrap() {
@@ -372,16 +395,18 @@ function bootstrap() {
   if (Array.isArray(persisted) && persisted.length) {
     appState.savedCurves = persisted.filter(c => c?.curveData?.length);
     updateSavedCurves();
-    renderAllCharts(appState.savedCurves);
     const last = appState.savedCurves[appState.savedCurves.length - 1];
     if (last) {
+      appState.lastResult = last;
       updateStatsPanel(last.stats);
       renderSightTable(last);
     }
+    renderAllCharts(curvesForDisplay());
   }
   updateMode();
+  updateConditionalFields();
   updateDerivedPanels();
-  if (!loadConfigFromUrl() && !appState.savedCurves.length) runSim(true);
+  if (!loadConfigFromUrl()) runSim();
 }
 
 bootstrap();

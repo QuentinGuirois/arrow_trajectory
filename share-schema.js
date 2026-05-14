@@ -34,7 +34,6 @@ function decodeLegacy(raw) {
     const numeric = Number(decoded);
     obj[key] = Number.isFinite(numeric) && decoded.trim() !== '' ? numeric : decoded;
   });
-  if (obj.plumeType === 'hélicoïdale') obj.plumeType = 'helicoidale';
   return obj;
 }
 
