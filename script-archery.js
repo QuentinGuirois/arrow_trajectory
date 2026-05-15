@@ -135,7 +135,7 @@ function renderArrowBuilderPanel(arrow, params) {
   const spine = arrow.spineLookup;
   const recommendation = spine.confidence === 'table'
     ? `Recommandé selon ${spine.sourceName}: ${spine.recommendedSpines.join('–')}`
-    : 'Recommandation spine: donnée non disponible / table fabricant non chargée.';
+    : spine.notes.join(' ');
 
   $('arrowBuilderPanel').innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">

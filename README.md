@@ -49,7 +49,7 @@ Si la vitesse est mesurée au chronographe, elle ne doit pas être recalculée d
 
 ## Spine
 
-Le spine statique moderne est une mesure de déflexion du tube.
+Le spine statique est une mesure de déflexion du tube.
 
 - nombre bas = tube plus raide ;
 - nombre haut = tube plus souple ;
@@ -57,7 +57,9 @@ Le spine statique moderne est une mesure de déflexion du tube.
 - allonger la flèche ou alourdir la pointe assouplit le comportement dynamique ;
 - raccourcir la flèche ou alléger la pointe rigidifie le comportement dynamique.
 
-Le simulateur ne produit aucune recommandation spine chiffrée sans table fabricant vérifiée. Le fichier `spine-tables.js` contient uniquement une structure prête à recevoir des tables réelles. Tant qu’aucune table n’est chargée, l’UI affiche : donnée non disponible / table non chargée.
+Les recommandations viennent uniquement de tables fabricant transcrites et vérifiées. Sans table vérifiée chargée, le simulateur retourne `no-data` et affiche : `Recommandation indisponible : aucune table fabricant vérifiée ne correspond à ces paramètres.`
+
+L’étude scientifique locale documente les limites du spine statique et les paramètres dynamiques associés ; elle ne produit pas de recommandation dynamique numérique. Les tendances affichées par le simulateur restent qualitatives.
 
 ## Architecture
 
@@ -66,7 +68,9 @@ Le simulateur ne produit aucune recommandation spine chiffrée sans table fabric
 - `state.js` : valeurs par défaut, presets indicatifs, état applicatif.
 - `units.js` : conversions et helpers numériques.
 - `arrow-builder.js` : masse, FOC, surface frontale, données de spine sans recommandation inventée.
-- `spine-tables.js` : structure de tables fabricant vérifiées, vide par défaut.
+- `spine-tables.js` : registre séparé des sources fabricant, vide par défaut.
+- `spine-lookup.js` : recherche stricte dans une table explicitement sélectionnée, sans interpolation.
+- `spine-trends.js` : tendances qualitatives et limites du spine statique.
 - `calibration.js` : vitesse chrono/utilisateur et sight marks par interpolation.
 - `tuning-diagnostics.js` : porpoising/fishtailing comparatifs.
 - `physics-advanced.js` : densité air, vent, Cd simplifié avec Reynolds corrigé.

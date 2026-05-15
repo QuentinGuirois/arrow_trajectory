@@ -64,7 +64,7 @@ function buildDiagnostics(params, arrow, verticalAmplitudeCm, lateralAmplitudeCm
     {
       label: 'Spine',
       level: arrow.spineLookup.confidence === 'table' ? 'table chargée' : 'donnée non disponible',
-      detail: arrow.spineLookup.notes
+      detail: arrow.spineLookup.notes.join(' ')
     }
   ];
 }

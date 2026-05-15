@@ -3,7 +3,7 @@
 // Ne recommande pas de spine sans table fabricant vérifiée.
 
 import { gramsToGrains, grainsToGrams, inchesToMeters, clamp } from './units.js';
-import { lookupRecommendedSpine } from './spine-tables.js';
+import { lookupRecommendedSpine } from './spine-lookup.js';
 
 const VANE_GRAINS_PER_INCH = { low: 0.7, medium: 1.1, high: 1.7 };
 const PROFILE_FACTOR = { low: 0.88, medium: 1, high: 1.14 };
@@ -30,7 +30,7 @@ export function buildArrow(params) {
     focPercent,
     spineStatic: params.spineStatic,
     spineLookup,
-    qualitativeTrends: buildQualitativeTrends(params),
+    qualitativeTrends: spineLookup.qualitativeTrends,
     stabilityLabel: calculateAeroStabilityLabel(params, focPercent),
     warnings: buildWarnings(params, totalMassGr, focPercent, spineLookup),
     vaneDragFactor: calculateVaneDragFactor(params),
@@ -78,17 +78,8 @@ function buildWarnings(params, totalMassGr, focPercent, spineLookup) {
   if (totalMassGr <= 0) warnings.push('Masse totale invalide.');
   if (Number.isFinite(focPercent) && focPercent < 7) warnings.push('FOC bas: tendance possible à une stabilité de pointe plus faible.');
   if (Number.isFinite(focPercent) && focPercent > 18) warnings.push('FOC élevé: trajectoire et réglage à valider au pas de tir.');
-  if (spineLookup.confidence === 'no-data') warnings.push('Recommandation spine indisponible: aucune table fabricant vérifiée chargée.');
+  if (spineLookup.confidence === 'no-data') warnings.push(...spineLookup.notes);
   return warnings;
-}
-
-function buildQualitativeTrends(params) {
-  return [
-    'Spine: nombre plus bas = tube plus raide; nombre plus haut = tube plus souple.',
-    'Augmenter la puissance demande généralement un tube plus raide.',
-    'Allonger la flèche ou alourdir la pointe assouplit le comportement dynamique.',
-    'Raccourcir la flèche ou alléger la pointe rigidifie le comportement dynamique.'
-  ];
 }
 
 export const ARROW_BUILDER_DOC = 'Calcule les données de flèche sans inventer de recommandation spine.';
