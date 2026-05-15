@@ -7,6 +7,11 @@ import { resolveLaunch, buildSightMarks } from './calibration.js';
 import { calculateTuningModel } from './tuning-diagnostics.js';
 import { renderAllCharts, purgeCharts, showTab, resizeCharts } from './plotly-charts.js';
 import { decodeShare, encodeShare, loadSetups, saveSetups } from './share-schema.js';
+import { resolveSpineRecommendation } from './spine-recommendation.js';
+import { compareCurrentSpineToRange } from './spine-evaluation.js';
+import { deriveInternalReleaseType, normalizeBowType } from './bow-utils.js';
+import { formatPrintedSpineLabel } from './spine-display.js';
+import { resolveEffectiveDrawWeight } from './draw-weight.js';
 import { debounce } from './util.js';
 import { formatNumber, readBool, readNumber } from './units.js';
 
@@ -50,8 +55,28 @@ const numericFields = {
 
 const selectFields = [
   'uiMode', 'massMode', 'vaneProfile', 'fletchingOrientation',
-  'bowType', 'releaseType'
+  'bowType', 'spineReference', 'drawWeightBasis'
 ];
+
+const SPINE_RELEVANT_FIELD_IDS = new Set([
+  'bowType',
+  'drawWeightLbs',
+  'drawLengthIn',
+  'drawWeightBasis',
+  'arrowLengthIn',
+  'pointWeightGrains',
+  'insertWeightGrains',
+  'poidsGr',
+  'massMode',
+  'spineStatic',
+  'spineReference',
+  'balancePointIn',
+  'nockingPointOffsetMm',
+  'centerShotMm',
+  'plungerStiffness',
+  'releaseErrorVerticalMm',
+  'releaseErrorLateralMm'
+]);
 
 const formHash = params => JSON.stringify(params);
 
@@ -68,11 +93,13 @@ function getFormValues() {
   params.diameter = readNumber('diameter', 7) / 1000;
   params.scopeOffset = readNumber('scopeOffset', 5) / 100;
   params.shootingHeight = DEFAULT_PARAMS.shootingHeight;
+  params.releaseType = deriveInternalReleaseType(params.bowType);
   return params;
 }
 
 function applyParamsToForm(params) {
   const merged = { ...DEFAULT_PARAMS, ...params };
+  merged.bowType = normalizeBowType(merged.bowType) || DEFAULT_PARAMS.bowType;
   Object.entries(numericFields).forEach(([id, fallback]) => {
     if (!$(id)) return;
     let value = Number.isFinite(merged[id]) ? merged[id] : fallback;
@@ -81,18 +108,26 @@ function applyParamsToForm(params) {
     $(id).value = value;
   });
   selectFields.forEach(id => {
-    if ($(id)) $(id).value = merged[id] ?? DEFAULT_PARAMS[id];
+    if (!$(id)) return;
+    const value = merged[id] !== undefined && merged[id] !== null
+      ? merged[id]
+      : DEFAULT_PARAMS[id];
+  
+    if (value !== undefined && value !== null) {
+      $(id).value = value;
+    }
   });
   if ($('setupName')) $('setupName').value = merged.setupName || DEFAULT_PARAMS.setupName;
   if ($('dispersionEnabled')) $('dispersionEnabled').checked = Boolean(merged.dispersionEnabled);
   updateConditionalFields();
+  updateSpineRecommendation();
   updateDerivedPanels();
 }
 
 function updateConditionalFields() {
   const params = getFormValues();
   const advanced = params.uiMode === 'advanced';
-  const compound = params.bowType.startsWith('compound');
+  const compound = normalizeBowType(params.bowType) === 'compound';
   const componentsMode = params.massMode === 'components';
 
   document.querySelectorAll('.advanced-field').forEach(el => el.classList.toggle('advanced-hidden', !advanced));
@@ -116,11 +151,9 @@ function updateDerivedPanels() {
   const params = getFormValues();
   const arrow = buildArrow(params);
   const launch = resolveLaunch(params);
-  const tuning = calculateTuningModel(params, arrow);
+  const { tuning } = updateSpineRecommendation(params, arrow);
   updateEnergyDisplay(arrow, launch);
-  renderArrowBuilderPanel(arrow, params);
   renderLaunchPanel(launch);
-  renderDiagnosticsPanel(arrow, tuning);
 }
 
 function updateEnergyDisplay(arrow = buildArrow(getFormValues()), launch = resolveLaunch(getFormValues())) {
@@ -131,25 +164,104 @@ function updateEnergyDisplay(arrow = buildArrow(getFormValues()), launch = resol
   }
 }
 
-function renderArrowBuilderPanel(arrow, params) {
-  const spine = arrow.spineLookup;
-  const recommendation = spine.confidence === 'table'
-    ? `Recommandé selon ${spine.sourceName}: ${spine.recommendedSpines.join('–')}`
-    : spine.notes.join(' ');
+function updateSpineRecommendation(params = getFormValues(), arrow = buildArrow(params)) {
+  const recommendation = resolveSpineRecommendation(params);
+  const comparison = compareCurrentSpineToRange(
+    params.spineStatic,
+    recommendation.rangeMin,
+    recommendation.rangeMax
+  );
+  appState.currentSpineRecommendation = recommendation;
+  const tuning = calculateTuningModel({ ...params, spineRecommendation: recommendation }, arrow);
+  renderArrowBuilderPanel(arrow, params, recommendation, comparison);
+  renderDiagnosticsPanel(arrow, tuning);
+  return { recommendation, comparison, tuning };
+}
+
+function renderArrowBuilderPanel(arrow, params, recommendation, comparison) {
+  const spineSummary = buildArrowSpineSummary(params, recommendation, comparison);
+  const effectiveDrawWeight = resolveEffectiveDrawWeight(params);
 
   $('arrowBuilderPanel').innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
       <div>Masse: <b>${formatNumber(arrow.totalMassGr, 1)} g</b> / ${formatNumber(arrow.totalMassGrains, 0)} gr</div>
-      <div>FOC: <b>${Number.isFinite(arrow.focPercent) ? `${formatNumber(arrow.focPercent, 1)}%` : 'donnée non disponible'}</b></div>
-      <div>Spine statique saisi: <b>${params.spineStatic || 'n/a'}</b> — nombre bas = plus raide.</div>
-      <div>${recommendation}</div>
-      <div>Surface frontale: <b>${(arrow.frontalAreaM2 * 1e6).toFixed(1)} mm²</b></div>
-      <div>Stabilité: <b>${arrow.stabilityLabel}</b></div>
+      <div>FOC: <b>${Number.isFinite(arrow.focPercent) ? `${formatNumber(arrow.focPercent, 1)}%` : 'donn&eacute;e non disponible'}</b></div>
+      <div>Spine saisi: <b>${params.spineStatic || '&mdash;'}</b> &mdash; nombre bas = plus raide.</div>
+      <div>Puissance utilis&eacute;e : <b>${formatNumber(effectiveDrawWeight.effectiveDrawWeightLbs, 1)} lbs</b></div>
+      <div>Surface frontale: <b>${(arrow.frontalAreaM2 * 1e6).toFixed(1)} mm&sup2;</b></div>
+      <div>Stabilit&eacute;: <b>${arrow.stabilityLabel}</b></div>
+    </div>
+    <div class="mt-3 border-t border-cyan-400/15 pt-3 space-y-1">
+      ${spineSummary.lines.map(line => `<div>${line}</div>`).join('')}
     </div>
     ${params.massMode === 'total' ? '<div class="mt-2 text-gray-400">Mode masse totale: GPI/composants ne pilotent pas la masse.</div>' : ''}
     ${arrow.warnings.length ? `<ul class="mt-2 text-yellow-300 list-disc pl-5">${arrow.warnings.map(w => `<li>${w}</li>`).join('')}</ul>` : ''}
   `;
 }
+
+function buildArrowSpineSummary(params, recommendation, comparison) {
+  if (recommendation.mode === 'generalized') {
+    return buildGeneralizedSpineSummary(params, recommendation, comparison);
+  }
+  return buildManufacturerSpineSummary(params, recommendation, comparison);
+}
+
+function buildGeneralizedSpineSummary(params, recommendation, comparison) {
+  if (recommendation.status !== 'available') {
+    return {
+      lines: [
+        '<b>Spine conseill&eacute; indisponible</b>',
+        '<span class="text-gray-400">Nombre bas = plus raide.</span>'
+      ]
+    };
+  }
+
+  return {
+    lines: [
+      `Spine conseill&eacute; : <b>${recommendation.suggestedSpine}</b>`,
+      `Fourchette courante : <b>${recommendation.rangeLabel}</b>`,
+      `Votre spine : <b>${params.spineStatic || '&mdash;'}</b> &mdash; ${comparison.label}`,
+      '<span class="text-gray-400">Nombre bas = plus raide.</span>',
+      '<span class="text-gray-400">&Agrave; valider au tuning r&eacute;el.</span>'
+    ]
+  };
+}
+
+function buildManufacturerSpineSummary(params, recommendation, comparison) {
+  if (recommendation.status !== 'available') {
+    return {
+      lines: [
+        `<b>${recommendation.note}</b>`,
+        '<span class="text-gray-400">Revenez &agrave; Spine g&eacute;n&eacute;ralis&eacute; pour une estimation indicative.</span>'
+      ]
+    };
+  }
+
+  const row = recommendation.matchedRow;
+  const sourceLabel = [
+    row.manufacturer,
+    row.chartVersion,
+    row.productFamily || row.arrowMaterialFamily
+  ].filter(Boolean).join(' ');
+  const lines = [
+    `<b>${formatPrintedSpineLabel(recommendation.displayLabel)}</b>`,
+    `Votre spine : <b>${params.spineStatic || '&mdash;'}</b> &mdash; ${comparison.label}`,
+    `<span class="text-gray-400">Source : ${sourceLabel || row.manufacturer}</span>`,
+    `<span class="text-gray-400">Table : ${row.sourceSection}${row.sourcePageLabel ? `, page ${row.sourcePageLabel}` : ''}</span>`,
+    '<span class="text-gray-400">Nombre bas = plus raide.</span>'
+  ];
+
+  if (recommendation.resolvedInputs?.chartArrowLengthIn !== recommendation.resolvedInputs?.originalArrowLengthIn) {
+    lines.push(`<span class="text-gray-400">Longueur utilis&eacute;e dans le tableau : ${recommendation.resolvedInputs.chartArrowLengthIn}"</span>`);
+  }
+  if (recommendation.resolvedInputs?.matchedDrawWeightRangeLabel) {
+    lines.push(`<span class="text-gray-400">Puissance : plage ${recommendation.resolvedInputs.matchedDrawWeightRangeLabel} lbs</span>`);
+  }
+  lines.push('<span class="text-gray-400">&Agrave; valider au tuning r&eacute;el.</span>');
+
+  return { lines };
+}
+
 
 function renderLaunchPanel(launch) {
   $('calibrationPanel').innerHTML = `
@@ -251,7 +363,7 @@ function renderSightTable(curve) {
   }
   const marks = buildSightMarks(curve.curveData, curve.params).slice(0, 10);
   $('sightTablePanel').innerHTML = `
-    <div class="text-cyan-300 font-bold mb-2">Sight marks / holdover</div>
+    <div class="text-cyan-300 font-bold mb-2">Rep&egrave;res de vis&eacute;e / compensation</div>
     <div class="grid grid-cols-2 md:grid-cols-5 gap-2">
       ${marks.map(m => `<div class="bg-slate-950/40 rounded p-2">${m.distance} m<br><b>${formatNumber(m.holdoverCm, 1)} cm</b><br><span class="text-gray-400">dérive ${formatNumber(m.driftCm, 1)} cm</span></div>`).join('')}
     </div>
@@ -284,7 +396,9 @@ function runSim() {
   const params = getFormValues();
   const arrow = buildArrow(params);
   const launch = resolveLaunch(params);
+  const spineRecommendation = resolveSpineRecommendation(params);
   params.fps = launch.fps;
+  const workerParams = { ...params, spineRecommendation };
   const requestId = ++appState.requestSeq;
   trajWorker.onmessage = (e) => {
     if (e.data.requestId !== requestId) return;
@@ -312,7 +426,7 @@ function runSim() {
       saveCurrentResult();
     }
   };
-  trajWorker.postMessage({ type: 'calcTrajArchery', requestId, params });
+  trajWorker.postMessage({ type: 'calcTrajArchery', requestId, params: workerParams });
 }
 
 const scheduleRecalc = debounce(() => {
@@ -341,14 +455,22 @@ function loadConfigFromUrl() {
 
 function bindEvents() {
   document.querySelectorAll('#params input, #params select').forEach(el => {
+    if (el.id === 'uiMode') return;
     el.addEventListener('input', scheduleRecalc);
     el.addEventListener('change', scheduleRecalc);
+    if (SPINE_RELEVANT_FIELD_IDS.has(el.id)) {
+      el.addEventListener('input', handleImmediateSpineInput);
+      el.addEventListener('change', handleImmediateSpineInput);
+    }
   });
+
+  $('uiMode').addEventListener('change', handleUiModeChange);
 
   $('presetSelect').onchange = () => {
     const preset = PRESETS[$('presetSelect').value];
     if (preset) {
       applyParamsToForm(preset.values);
+      updateSpineRecommendation();
       scheduleRecalc();
     }
   };
@@ -389,6 +511,18 @@ function bindEvents() {
   window.addEventListener('resize', debounce(resizeCharts, 150));
 }
 
+function handleUiModeChange() {
+  updateConditionalFields();
+  updateSpineRecommendation();
+  updateDerivedPanels();
+  resizeCharts();
+}
+
+function handleImmediateSpineInput() {
+  updateSpineRecommendation();
+  runSim();
+}
+
 function bootstrap() {
   bindEvents();
   const persisted = loadSetups();
@@ -405,6 +539,7 @@ function bootstrap() {
   }
   updateMode();
   updateConditionalFields();
+  updateSpineRecommendation();
   updateDerivedPanels();
   if (!loadConfigFromUrl()) runSim();
 }

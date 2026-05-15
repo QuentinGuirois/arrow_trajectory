@@ -1,4 +1,4 @@
-﻿// plotly-charts.js
+// plotly-charts.js
 // Construction et rendu des graphes Plotly: 2D, Ã©nergie, temps, holdover, 3D, dÃ©rive, tuning et AoA.
 
 import { buildSightMarks } from './calibration.js';
@@ -92,7 +92,7 @@ export function renderAllCharts(curves) {
   }, config);
   Plotly.react('energyChart', energy, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Ã‰nergie (J)') }, config);
   Plotly.react('timeChart', time, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Temps (s)') }, config);
-  Plotly.react('holdoverChart', hold, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Holdover (cm)') }, config);
+  Plotly.react('holdoverChart', hold, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Compensation (cm)') }, config);
   Plotly.react('trajectory3D', traces3d, {
     ...common,
     scene: {
@@ -106,7 +106,7 @@ export function renderAllCharts(curves) {
   }, config);
   Plotly.react('driftChart', drift, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('DÃ©rive latÃ©rale (cm)') }, config);
   Plotly.react('tuningChart', tuning, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Oscillation (cm)') }, config);
-  Plotly.react('aoaChart', aoa, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('AoA proxy diagnostic (Â°)') }, config);
+  Plotly.react('aoaChart', aoa, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Angle d’attaque proxy diagnostic (Â°)') }, config);
   resizeCharts();
 }
 
@@ -204,7 +204,7 @@ function traceHoldover(points, params, color, label) {
     type: 'scattergl',
     name: label,
     line: { width: 2, color },
-    text: marks.map(p => `<b>${label}</b><br>Distance: ${p.distance} m<br>Holdover: ${p.holdoverCm.toFixed(1)} cm<br>DÃ©rive: ${p.driftCm.toFixed(1)} cm`),
+    text: marks.map(p => `<b>${label}</b><br>Distance: ${p.distance} m<br>Compensation: ${p.holdoverCm.toFixed(1)} cm<br>DÃ©rive: ${p.driftCm.toFixed(1)} cm`),
     hoverinfo: 'text'
   };
 }
@@ -216,7 +216,7 @@ function traceTuning(points, color, label) {
       y: points.map(p => p.porpoiseCm),
       mode: 'lines',
       type: 'scattergl',
-      name: `${label} porpoising`,
+      name: `${label} oscillation verticale`,
       line: { width: 1.5, color }
     },
     {
@@ -224,7 +224,7 @@ function traceTuning(points, color, label) {
       y: points.map(p => p.fishtailCm),
       mode: 'lines',
       type: 'scattergl',
-      name: `${label} fishtailing`,
+      name: `${label} oscillation latérale`,
       line: { width: 1.5, color, dash: 'dot' }
     }
   ];

@@ -21,7 +21,6 @@
 - tout autre fabricant
 - toute application automatique des règles d'ajustement
 - toute interpolation ou extrapolation entre colonnes
-- toute règle d'arrondi des longueurs fractionnaires
 
 ## Conventions retenues
 
@@ -42,8 +41,8 @@
 
 ## Limites actuelles du lookup
 
-- Le lookup ne matche que les cellules exactes déjà transcrites.
-- Une longueur non affichée exactement, par exemple `28.5"`, retourne `no-data`.
+- Le lookup strict ne matche que les cellules exactes déjà transcrites.
+- Le lookup utilisateur applique uniquement la règle d'arrondi des longueurs fractionnaires explicitement imprimée par Easton.
 - Les règles visibles dans `ADJUST THE CHART TO YOUR BOW SET-UP` sont stockées en métadonnées via `adjustmentRules`, mais ne sont pas appliquées.
 - Aucun ajustement automatique n'est appliqué selon :
   - la vitesse ;
@@ -51,6 +50,24 @@
   - le type de décoche ;
   - le type de branches recurve.
 - Les entrées en dehors des références de base actuellement transcrites doivent rester prudentes et retourner `no-data` si elles ne correspondent pas au cadre de référence retenu.
+
+## Lookup utilisateur
+
+- `lookupRecommendedSpineStrict(...)` reste le garde-fou de transcription :
+  - aucune conversion de longueur ;
+  - aucune interpolation ;
+  - aucune extrapolation.
+- `lookupRecommendedSpineForUser(...)` est utilisé par l'interface :
+  - il applique la règle Easton imprimée pour les longueurs fractionnaires ;
+  - il rattache par exemple `29.1"` et `28.9"` à la colonne `29"` ;
+  - il accepte les valeurs intermédiaires d'une plage de puissance, par exemple `40.5 lbs` dans `40-44`.
+- Le document Easton imprime explicitement :
+  - `28.25"` -> colonne `28"`
+  - `28.5"` -> colonne `29"`
+- Le lookup utilisateur n'extrapole jamais hors du domaine couvert :
+  - `20.4"` reste `no-data`
+  - `34.6"` reste `no-data`
+- Les tests stricts restent présents pour valider la fidélité de la transcription cellule par cellule.
 
 ## Gestion des bornes ouvertes
 
@@ -80,7 +97,7 @@ Les tests suivants ont été ajoutés dans `tests/spine.test.mjs` :
 2. `compound`, `70 lbs`, `34 in` -> `200-150`
 3. `recurve`, `21 lbs`, `22 in` -> `2000-1800`
 4. `recurve`, `63 lbs`, `31 in` -> `300-250`
-5. `compound`, `40 lbs`, `28.5 in` -> `no-data`
+5. lookup strict : `compound`, `40 lbs`, `28.5 in` -> `no-data`
 6. `compound`, `16.9 lbs`, `21 in` -> ligne `<17`
 7. `compound`, `17.0 lbs`, `21 in` -> ligne `17-23`
 8. `recurve`, `19.9 lbs`, `21 in` -> ligne `<20 lbs.`
@@ -93,7 +110,7 @@ Chaque test de cellule vérifie aussi :
 
 ## Ambiguïtés restantes
 
-- Le document imprime une règle d'arrondi pour les longueurs fractionnaires, mais elle n'est pas encore implémentée.
+- La règle d'arrondi des longueurs fractionnaires est désormais implémentée uniquement dans le lookup utilisateur.
 - Les règles d'ajustement du bloc inférieur sont visibles mais pas encore traduites en logique de lookup.
 - Les lignes ouvertes `<17` et `<20 lbs.` sont transcrites avec une borne supérieure exclusive et sont désormais couvertes par des tests dédiés.
 - La section aluminum reste volontairement hors périmètre de cette passe.

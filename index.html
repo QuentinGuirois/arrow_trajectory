@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
@@ -63,8 +63,8 @@
                       <input type="text" id="setupName" value="Setup de base" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
-                      <label class="field-label">Preset</label>
-                      <select id="presetSelect" class="input-field w-full py-3 px-4 rounded-lg" title="Preset indicatif, non recommandé pro">
+                      <label class="field-label">Profil</label>
+                      <select id="presetSelect" class="input-field w-full py-3 px-4 rounded-lg" title="Profil indicatif, non recommandé pro">
                         <option value="">Personnalisé</option>
                         <option value="longbowTraditional">Longbow traditionnel</option>
                         <option value="recurveLeisure">Recurve loisir</option>
@@ -75,7 +75,7 @@
                       </select>
                     </div>
                   </div>
-                  <div class="text-xs text-gray-400 mt-2">Preset indicatif. La vitesse chrono et les tables fabricant restent prioritaires.</div>
+                  <div class="text-xs text-gray-400 mt-2">Profil indicatif. La vitesse chrono et les tables fabricant restent prioritaires.</div>
                 </div>
 
                 <details class="section-card" open>
@@ -84,12 +84,9 @@
                     <div>
                       <label class="field-label">Type d’arc</label>
                       <select id="bowType" class="input-field w-full py-3 px-4 rounded-lg">
-                        <option value="longbow_traditional">Longbow traditionnel</option>
-                        <option value="recurve_leisure">Recurve loisir</option>
-                        <option value="recurve_target">Recurve cible</option>
-                        <option value="barebow_field">Barebow field</option>
-                        <option value="compound_hunting">Compound chasse</option>
-                        <option value="compound_target">Compound cible</option>
+                        <option value="compound">Compound</option>
+                        <option value="recurve" selected>Recurve</option>
+                        <option value="traditional">Traditionnel</option>
                       </select>
                     </div>
                     <div>
@@ -152,51 +149,61 @@
                       <input type="number" id="arrowLengthIn" value="29" min="20" max="34" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
-                      <label class="field-label">Spine statique saisi</label>
+                      <label class="field-label">Spine saisi</label>
                       <input type="number" id="spineStatic" value="600" min="250" max="1200" step="10" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
-                    <div class="component-only">
-                      <label class="field-label">Shaft GPI</label>
-                      <input type="number" id="shaftGpi" value="7.4" min="3" max="15" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
+                    <div>
+                      <label class="field-label">Référence spine</label>
+                      <select id="spineReference" class="input-field w-full py-3 px-4 rounded-lg">
+                        <option value="generalized">Spine généralisé</option>
+                        <option value="easton">Easton</option>
+                        <option value="victory">Victory</option>
+                        <option value="carbonexpress">Carbon Express</option>
+                        <option value="goldtip">Gold Tip</option>
+                      </select>
                     </div>
                     <div class="component-only">
+                      <label class="field-label">Tube (GPI)</label>
+                      <input type="number" id="shaftGpi" value="7.4" min="3" max="15" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
+                    </div>
+                    <div>
                       <label class="field-label">Pointe (grains)</label>
                       <input type="number" id="pointWeightGrains" value="100" min="40" max="250" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
-                    <div class="component-only">
+                    <div>
                       <label class="field-label">Insert / outsert (grains)</label>
                       <input type="number" id="insertWeightGrains" value="12" min="0" max="120" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div class="component-only">
-                      <label class="field-label">Nock (grains)</label>
+                      <label class="field-label">Encoche (grains)</label>
                       <input type="number" id="nockWeightGrains" value="10" min="2" max="30" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div class="component-only">
-                      <label class="field-label">Nombre de vanes</label>
+                      <label class="field-label">Nombre de plumes</label>
                       <input type="number" id="vaneCount" value="3" min="2" max="4" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div class="component-only">
-                      <label class="field-label">Longueur vane (in)</label>
+                      <label class="field-label">Longueur plume (in)</label>
                       <input type="number" id="vaneLengthIn" value="1.75" min="1" max="5" step="0.05" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div class="component-only">
-                      <label class="field-label">Profil vane</label>
+                      <label class="field-label">Profil plume</label>
                       <select id="vaneProfile" class="input-field w-full py-3 px-4 rounded-lg">
-                        <option value="low">Low</option>
-                        <option value="medium" selected>Medium</option>
-                        <option value="high">High</option>
+                        <option value="low">Bas</option>
+                        <option value="medium" selected>Moyen</option>
+                        <option value="high">Haut</option>
                       </select>
                     </div>
                     <div class="component-only">
-                      <label class="field-label">Orientation fletching</label>
+                      <label class="field-label">Orientation empennage</label>
                       <select id="fletchingOrientation" class="input-field w-full py-3 px-4 rounded-lg">
-                        <option value="straight">Straight</option>
+                        <option value="straight">Droit</option>
                         <option value="offset">Offset</option>
-                        <option value="helical">Helical</option>
+                        <option value="helical">Hélicoïdal</option>
                       </select>
                     </div>
                     <div class="component-only">
-                      <label class="field-label">Angle offset/helical (°)</label>
+                      <label class="field-label">Angle offset / hélicoïdal (°)</label>
                       <input type="number" id="fletchingAngleDeg" value="0" min="0" max="5" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div class="component-only">
@@ -204,7 +211,7 @@
                       <input type="number" id="balancePointIn" value="0" min="0" max="34" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                   </div>
-                  <div class="mass-total-note text-sm text-gray-400 mt-3">Mode masse totale: les composants sont masqués car ils ne pilotent pas la masse.</div>
+                  <div class="mass-total-note text-sm text-gray-400 mt-3">Mode masse totale : pointe et insert restent visibles pour le spine, mais les composants ne pilotent pas la masse totale.</div>
                   <div id="arrowBuilderPanel" class="derived-panel mt-3"></div>
                 </details>
 
@@ -212,27 +219,27 @@
                   <summary>Arc avancé</summary>
                   <div class="section-grid">
                     <div>
-                      <label class="field-label">Décoche</label>
-                      <select id="releaseType" class="input-field w-full py-3 px-4 rounded-lg">
-                        <option value="fingers">Fingers</option>
-                        <option value="mechanical">Mechanical</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label class="field-label">Draw weight (lbs)</label>
+                      <label class="field-label">Puissance (lbs)</label>
                       <input type="number" id="drawWeightLbs" value="35" min="15" max="90" step="0.5" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
-                      <label class="field-label">Draw length (in)</label>
+                      <label class="field-label">Référence de puissance</label>
+                      <select id="drawWeightBasis" class="input-field w-full py-3 px-4 rounded-lg">
+                        <option value="at-28" selected>Puissance à 28 pouces</option>
+                        <option value="actual">Puissance réelle</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label class="field-label">Allonge (in)</label>
                       <input type="number" id="drawLengthIn" value="28" min="20" max="34" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div class="compound-only">
-                      <label class="field-label">Let-off compound (%)</label>
+                      <label class="field-label">Let-off (%)</label>
                       <input type="number" id="letOffPercent" value="0" min="0" max="90" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                       <div class="text-xs text-gray-400 mt-1">Informatif: ne modifie pas la trajectoire si la vitesse chrono est saisie.</div>
                     </div>
                     <div class="compound-only">
-                      <label class="field-label">Cam aggressiveness</label>
+                      <label class="field-label">Agressivité des cames</label>
                       <input type="number" id="camAggressiveness" value="0.4" min="0" max="1" step="0.05" class="input-field w-full py-3 px-4 rounded-lg">
                       <div class="text-xs text-gray-400 mt-1">Annotation technique, sans effet sur les courbes en mode chrono.</div>
                     </div>
@@ -263,18 +270,18 @@
                 </details>
 
                 <details class="section-card advanced-field">
-                  <summary>Tuning / diagnostic</summary>
+                  <summary>Réglage / diagnostic</summary>
                   <div class="section-grid">
                     <div>
-                      <label class="field-label">Nocking point offset (mm)</label>
+                      <label class="field-label">Décalage du point d’encochage (mm)</label>
                       <input type="number" id="nockingPointOffsetMm" value="0" min="-10" max="10" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
-                      <label class="field-label">Center shot (mm)</label>
+                      <label class="field-label">Centrage latéral (mm)</label>
                       <input type="number" id="centerShotMm" value="0" min="-10" max="10" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
-                      <label class="field-label">Plunger stiffness</label>
+                      <label class="field-label">Raideur du berger button</label>
                       <input type="number" id="plungerStiffness" value="0.5" min="0" max="1" step="0.05" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
@@ -328,11 +335,11 @@
                   <button class="tab-active font-medium" id="tab2d">2D</button>
                   <button class="text-gray-400 hover:text-cyan-300 transition" id="tabEnergy">Énergie</button>
                   <button class="text-gray-400 hover:text-cyan-300 transition" id="tabTime">Temps</button>
-                  <button class="text-gray-400 hover:text-cyan-300 transition" id="tabHoldover">Holdover</button>
+                  <button class="text-gray-400 hover:text-cyan-300 transition" id="tabHoldover">Compensation</button>
                   <button class="text-gray-400 hover:text-cyan-300 transition" id="tabDrift">Dérive</button>
                   <button class="text-gray-400 hover:text-cyan-300 transition" id="tab3d">3D</button>
-                  <button class="text-gray-400 hover:text-cyan-300 transition advanced-tab" id="tabTuning">Tuning</button>
-                  <button class="text-gray-400 hover:text-cyan-300 transition advanced-tab" id="tabAoa">AoA</button>
+                  <button class="text-gray-400 hover:text-cyan-300 transition advanced-tab" id="tabTuning">Réglage</button>
+                  <button class="text-gray-400 hover:text-cyan-300 transition advanced-tab" id="tabAoa">Angle</button>
                 </div>
               </div>
               <div class="chart-container bg-gray-900/50 rounded-xl border border-gray-700 relative" id="chart">
@@ -358,8 +365,8 @@
             </h2>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-300">
               <div>La vitesse chrono / initiale saisie est la vérité principale du modèle.</div>
-              <div>Le modèle de porpoising/fishtailing est un indicateur comparatif, pas une simulation mécanique complète de flexion.</div>
-              <div>Le spine recommandé reste indisponible tant qu’aucune table fabricant vérifiée n’est chargée.</div>
+              <div>Le modèle d’oscillations verticale et latérale est un indicateur comparatif, pas une simulation mécanique complète de flexion.</div>
+              <div>Le spine fabricant est une aide de sélection et de réglage ; il ne modifie ni la trajectoire ni la vitesse.</div>
             </div>
           </div>
         </main>

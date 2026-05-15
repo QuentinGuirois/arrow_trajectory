@@ -57,7 +57,13 @@ Le spine statique est une mesure de déflexion du tube.
 - allonger la flèche ou alourdir la pointe assouplit le comportement dynamique ;
 - raccourcir la flèche ou alléger la pointe rigidifie le comportement dynamique.
 
-Les recommandations viennent uniquement de tables fabricant transcrites et vérifiées. Sans table vérifiée chargée, le simulateur retourne `no-data` et affiche : `Recommandation indisponible : aucune table fabricant vérifiée ne correspond à ces paramètres.`
+Les recommandations fabricant viennent uniquement de tables transcrites et vérifiées. Sans table vérifiée chargée, le simulateur retourne `no-data` et affiche : `Recommandation indisponible : aucune table fabricant vérifiée ne correspond à ces paramètres.`
+
+Le mode `Spine généralisé` est une estimation indicative distincte : il agrège seulement les rows fabricant vérifiées déjà intégrées, sans remplacer les recommandations spécifiques d'une marque.
+
+Les valeurs saisies par l'utilisateur sont rattachées aux plages ou colonnes du tableau fabricant seulement lorsqu'une règle locale est documentée. Le simulateur n'extrapole pas hors tableau.
+
+Le spine reste séparé de la trajectoire balistique : il ne modifie pas le vol du centre de masse. En revanche, le spine saisi est comparé à la plage conseillée et influence les diagnostics de tuning, surtout le risque de fishtailing.
 
 L’étude scientifique locale documente les limites du spine statique et les paramètres dynamiques associés ; elle ne produit pas de recommandation dynamique numérique. Les tendances affichées par le simulateur restent qualitatives.
 
@@ -68,8 +74,13 @@ L’étude scientifique locale documente les limites du spine statique et les pa
 - `state.js` : valeurs par défaut, presets indicatifs, état applicatif.
 - `units.js` : conversions et helpers numériques.
 - `arrow-builder.js` : masse, FOC, surface frontale, données de spine sans recommandation inventée.
-- `spine-tables.js` : registre séparé des sources fabricant, vide par défaut.
-- `spine-lookup.js` : recherche stricte dans une table explicitement sélectionnée, sans interpolation.
+- `spine-tables.js` : registre séparé des sources fabricant et rows vérifiées.
+- `spine-lookup.js` : recherche stricte + lookup utilisateur, sans extrapolation.
+- `spine-generalized.js` : estimation indicative issue des tables fabricant intégrées.
+- `spine-recommendation.js` : résolution unique du conseil utilisé par l'UI et le tuning.
+- `spine-evaluation.js` : comparaison entre spine saisi et fourchette conseillée.
+- `bow-utils.js` : normalisation des familles d'arc et décoche interne dérivée.
+- `spine-display.js` : helpers d'affichage spine en français.
 - `spine-trends.js` : tendances qualitatives et limites du spine statique.
 - `calibration.js` : vitesse chrono/utilisateur et sight marks par interpolation.
 - `tuning-diagnostics.js` : porpoising/fishtailing comparatifs.

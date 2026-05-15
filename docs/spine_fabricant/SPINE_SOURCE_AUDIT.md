@@ -12,7 +12,7 @@ Règle de lecture appliquée : aucune donnée n'est complétée par mémoire, in
 | Fichier | Source | Type | Confiance | Potentiel d'intégration |
 | --- | --- | --- | --- | --- |
 | `301055-A-Arrow-Shaft-Selection-Target.pdf` | Easton | chart spine | high | ready-for-transcription |
-| `spine_guide_gold_tips.pdf` | Gold Tip | sélecteur spine | high | needs-manual-check |
+| `spine_guide_gold_tips.pdf` | Gold Tip | sélecteur spine | high | ready-for-transcription |
 | `spine_guide_victory_archery.pdf` | Victory Archery | chart spine | high | ready-for-transcription |
 | `TuningGuideEaston.pdf` | Easton | guide tuning | high | metadata-only |
 | `carbon_express/adjustable-weight-chart-scaled.webp` | Carbon Express | autre | high | needs-manual-check |
@@ -104,7 +104,16 @@ Règle de lecture appliquée : aucune donnée n'est complétée par mémoire, in
   - la décoche de référence des deux tableaux compound n'est pas explicitement nommée
   - le document combine sélection de spine et recommandations de tuning, ce qui demande de séparer strictement les données de table et les conseils qualitatifs
 - **niveau de confiance** : high
-- **potentiel d'intégration** : needs-manual-check
+- **potentiel d'intégration** : ready-for-transcription
+
+### Mini-audit Gold Tip complémentaire
+
+- Les trois grilles numériques visibles sur la page locale sont lisibles :
+  - compound `IBO SPEED 315+ (FPS)`
+  - compound `IBO SPEED 315- (FPS)`
+  - `RECURVE BOW`
+- La page suivante absente empêche de relier exhaustivement les spines à toutes les disponibilités produit, mais n'empêche pas de transcrire les cellules numériques de spine clairement lisibles sur la page présente.
+- Les premières rows intégrées doivent rester partielles et vérifiées manuellement ; les règles de finger release restent des métadonnées de tuning, pas une conversion automatique appliquée au lookup.
 
 ---
 

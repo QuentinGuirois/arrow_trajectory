@@ -3,7 +3,7 @@
 // Ne recommande pas de spine sans table fabricant vérifiée.
 
 import { gramsToGrains, grainsToGrams, inchesToMeters, clamp } from './units.js';
-import { lookupRecommendedSpine } from './spine-lookup.js';
+import { getSpineQualitativeTrends } from './spine-trends.js';
 
 const VANE_GRAINS_PER_INCH = { low: 0.7, medium: 1.1, high: 1.7 };
 const PROFILE_FACTOR = { low: 0.88, medium: 1, high: 1.14 };
@@ -16,7 +16,6 @@ export function buildArrow(params) {
   const totalMassGr = params.massMode === 'components' ? grainsToGrams(componentMassGrains) : params.poidsGr;
   const totalMassGrains = gramsToGrains(totalMassGr);
   const focPercent = resolveFoc(params, shaftMassGrains, vaneMassGrains, componentMassGrains);
-  const spineLookup = lookupRecommendedSpine(params);
 
   return {
     totalMassGr,
@@ -29,10 +28,9 @@ export function buildArrow(params) {
     frontalAreaM2: Math.PI * Math.pow(params.diameter / 2, 2),
     focPercent,
     spineStatic: params.spineStatic,
-    spineLookup,
-    qualitativeTrends: spineLookup.qualitativeTrends,
+    qualitativeTrends: getSpineQualitativeTrends(params),
     stabilityLabel: calculateAeroStabilityLabel(params, focPercent),
-    warnings: buildWarnings(params, totalMassGr, focPercent, spineLookup),
+    warnings: buildWarnings(params, totalMassGr, focPercent),
     vaneDragFactor: calculateVaneDragFactor(params),
     spinStabilization: calculateSpinStabilization(params)
   };
@@ -72,13 +70,12 @@ function calculateAeroStabilityLabel(params, focPercent) {
   return 'stabilisation empennage standard';
 }
 
-function buildWarnings(params, totalMassGr, focPercent, spineLookup) {
+function buildWarnings(params, totalMassGr, focPercent) {
   const warnings = [];
   if (params.massMode === 'components' && params.shaftGpi <= 0) warnings.push('GPI manquant: masse par composants indisponible.');
   if (totalMassGr <= 0) warnings.push('Masse totale invalide.');
   if (Number.isFinite(focPercent) && focPercent < 7) warnings.push('FOC bas: tendance possible à une stabilité de pointe plus faible.');
   if (Number.isFinite(focPercent) && focPercent > 18) warnings.push('FOC élevé: trajectoire et réglage à valider au pas de tir.');
-  if (spineLookup.confidence === 'no-data') warnings.push(...spineLookup.notes);
   return warnings;
 }
 

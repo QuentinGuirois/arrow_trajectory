@@ -19,6 +19,12 @@ Si une cellule est incertaine, illisible, ambiguë ou dépend d'une règle encor
    - les notes utiles du document.
 5. Marquer la source et la ligne `verified` seulement après relecture manuelle.
 
+Une transcription peut rester volontairement partielle si seules certaines cellules sont relues avec certitude. Dans ce cas :
+
+- déclarer la table avec `coverage: 'partial-verified-cells'` ;
+- n'ajouter que les rows relues ;
+- laisser le lookup retourner `no-data` hors de ces cellules.
+
 Exemple de forme cible :
 
 ```js
@@ -98,6 +104,12 @@ Dans ces cas :
 - ajouter une note dans l'audit ou dans la documentation d'import ;
 - attendre une vérification manuelle supplémentaire.
 
+Si une cellule recommande surtout une gamme produit plutôt qu'un nombre de spine pur :
+
+- conserver le texte exact dans `productRecommendationLabel` ;
+- renseigner `recommendedSpines` uniquement lorsque les nombres de spine sont lisibles avec certitude ;
+- ne jamais fabriquer un nombre à partir d'un nom de gamme ambigu.
+
 ## 5. Pourquoi les fabricants restent séparés
 
 Les conventions de mesure, les familles de tubes, les classes de vitesse et les règles d'ajustement diffèrent selon les fabricants.  
@@ -141,7 +153,27 @@ Les tests doivent vérifier :
 - l'absence d'interpolation ;
 - l'absence de recommandation quand la source ou la ligne n'est pas `verified`.
 
-## 8. Règles à ne jamais enfreindre
+Quand un fabricant imprime une règle de rattachement des entrées utilisateur aux colonnes du tableau, créer deux chemins :
+
+- un lookup strict, qui ne fait aucun arrondi et valide la transcription ;
+- un lookup utilisateur, qui applique seulement la règle fabricant documentée et refuse toute extrapolation.
+
+## 8. Construire une estimation généralisée
+
+Le mode `Spine généralisé` n'est pas une table fabricant. Il peut agréger plusieurs fabricants uniquement si :
+
+- les rows utilisées sont `verified` ;
+- les fabricants restent séparés dans le registre source ;
+- au moins plusieurs fabricants intégrés couvrent le setup ;
+- l'interface le présente explicitement comme une estimation indicative à valider au tuning réel.
+
+Il ne doit jamais utiliser :
+
+- une source `metadata-only` ;
+- une cellule incertaine ;
+- l'étude scientifique pour inventer une valeur numérique.
+
+## 9. Règles à ne jamais enfreindre
 
 - ne jamais inventer de valeur ;
 - ne jamais interpoler entre deux cellules ;

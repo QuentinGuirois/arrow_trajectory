@@ -9,7 +9,7 @@ export const COLORS = [
 export const DEFAULT_PARAMS = {
   setupName: 'Setup de base',
   uiMode: 'simple',
-  bowType: 'recurve_leisure',
+  bowType: 'recurve',
 
   fps: 190,
   angleDeg: 0,
@@ -22,6 +22,7 @@ export const DEFAULT_PARAMS = {
   diameter: 0.007,
   arrowLengthIn: 29,
   spineStatic: 600,
+  spineReference: 'generalized',
   shaftGpi: 7.4,
   pointWeightGrains: 100,
   insertWeightGrains: 12,
@@ -36,6 +37,7 @@ export const DEFAULT_PARAMS = {
   releaseType: 'fingers',
   drawWeightLbs: 35,
   drawLengthIn: 28,
+  drawWeightBasis: 'at-28',
   letOffPercent: 0,
   camAggressiveness: 0.4,
 
@@ -60,7 +62,7 @@ export const PRESETS = {
     label: 'Longbow traditionnel',
     values: {
       setupName: 'Longbow traditionnel',
-      bowType: 'longbow_traditional',
+      bowType: 'traditional',
       fps: 165,
       poidsGr: 32,
       diameter: 0.008,
@@ -69,7 +71,6 @@ export const PRESETS = {
       pointWeightGrains: 125,
       vaneProfile: 'low',
       fletchingOrientation: 'straight',
-      releaseType: 'fingers',
       drawWeightLbs: 40
     }
   },
@@ -77,7 +78,7 @@ export const PRESETS = {
     label: 'Recurve loisir',
     values: {
       setupName: 'Recurve loisir',
-      bowType: 'recurve_leisure',
+      bowType: 'recurve',
       fps: 180,
       poidsGr: 26,
       diameter: 0.007,
@@ -85,7 +86,6 @@ export const PRESETS = {
       spineStatic: 700,
       pointWeightGrains: 100,
       vaneProfile: 'medium',
-      releaseType: 'fingers',
       drawWeightLbs: 30
     }
   },
@@ -93,7 +93,7 @@ export const PRESETS = {
     label: 'Recurve cible',
     values: {
       setupName: 'Recurve cible',
-      bowType: 'recurve_target',
+      bowType: 'recurve',
       fps: 205,
       poidsGr: 22.5,
       diameter: 0.0058,
@@ -103,7 +103,6 @@ export const PRESETS = {
       pointWeightGrains: 100,
       vaneLengthIn: 1.75,
       vaneProfile: 'low',
-      releaseType: 'fingers',
       drawWeightLbs: 40
     }
   },
@@ -111,7 +110,7 @@ export const PRESETS = {
     label: 'Barebow field',
     values: {
       setupName: 'Barebow field',
-      bowType: 'barebow_field',
+      bowType: 'recurve',
       fps: 185,
       poidsGr: 27,
       diameter: 0.0065,
@@ -120,7 +119,6 @@ export const PRESETS = {
       pointWeightGrains: 120,
       vaneLengthIn: 2,
       vaneProfile: 'medium',
-      releaseType: 'fingers',
       drawWeightLbs: 38
     }
   },
@@ -128,7 +126,7 @@ export const PRESETS = {
     label: 'Compound hunting',
     values: {
       setupName: 'Compound hunting',
-      bowType: 'compound_hunting',
+      bowType: 'compound',
       fps: 285,
       poidsGr: 29.5,
       diameter: 0.0072,
@@ -140,7 +138,6 @@ export const PRESETS = {
       vaneProfile: 'high',
       fletchingOrientation: 'helical',
       fletchingAngleDeg: 2,
-      releaseType: 'mechanical',
       drawWeightLbs: 65,
       drawLengthIn: 29,
       letOffPercent: 80,
@@ -151,7 +148,7 @@ export const PRESETS = {
     label: 'Compound target',
     values: {
       setupName: 'Compound target',
-      bowType: 'compound_target',
+      bowType: 'compound',
       fps: 275,
       poidsGr: 25.5,
       diameter: 0.0062,
@@ -162,7 +159,6 @@ export const PRESETS = {
       vaneProfile: 'medium',
       fletchingOrientation: 'offset',
       fletchingAngleDeg: 1.5,
-      releaseType: 'mechanical',
       drawWeightLbs: 55,
       drawLengthIn: 28.5,
       letOffPercent: 70,
@@ -176,5 +172,6 @@ export const appState = {
   activeTab: 'trajectory2D',
   requestSeq: 0,
   lastResult: null,
-  pendingSave: false
+  pendingSave: false,
+  currentSpineRecommendation: null
 };
