@@ -3,6 +3,81 @@
 // Aucune ligne numérique n'est transcrite tant qu'elle n'a pas été relue et validée.
 
 const STATIC_SPINE_NOTE = 'Manufacturer static spine notation; lower number means stiffer shaft.';
+const EASTON_301055A_SOURCE_SECTION = 'A/C • ALL-CARBON ARROW CUT LENGTH';
+
+const EASTON_301055A_AC_ALL_CARBON_LENGTHS_IN = [
+  21, 22, 23, 24, 25, 26, 27,
+  28, 29, 30, 31, 32, 33, 34
+];
+
+const EASTON_301055A_AC_ALL_CARBON_MATRIX = [
+  ['2000', '2000', '2000-1800', '1800-1700', '1750-1400', '1450-1200', '1250-1050', '1080-880', '900-750', '800-700', '720-625', '675-600', '640-570', '575-500'],
+  ['2000', '2000-1800', '1800-1700', '1750-1400', '1450-1200', '1250-1050', '1080-880', '900-750', '800-700', '720-625', '675-600', '640-570', '575-500', '525-450'],
+  ['2000-1800', '1800-1700', '1750-1400', '1450-1200', '1250-1050', '1080-880', '900-750', '800-700', '720-625', '675-600', '640-570', '575-500', '525-450', '475-400'],
+  ['1800-1700', '1750-1400', '1450-1200', '1250-1050', '1080-880', '900-750', '800-700', '720-625', '675-600', '640-570', '575-500', '525-450', '475-400', '440-370'],
+  ['1750-1400', '1450-1200', '1250-1050', '1080-880', '900-750', '800-700', '720-625', '675-600', '640-570', '575-500', '525-450', '475-400', '440-370', '400-340'],
+  ['1450-1200', '1250-1050', '1080-880', '900-750', '800-700', '720-625', '675-600', '640-570', '575-500', '525-450', '475-400', '440-370', '400-340', '370-310'],
+  ['1250-1050', '1080-880', '900-750', '800-700', '720-625', '675-600', '640-570', '575-500', '525-450', '475-400', '440-370', '400-340', '370-310', '340-300'],
+  ['1080-880', '900-750', '800-700', '720-625', '675-600', '640-570', '575-500', '525-450', '475-400', '440-370', '400-340', '370-310', '340-300', '300-250'],
+  ['900-750', '800-700', '720-625', '675-600', '640-570', '575-500', '525-450', '475-400', '440-370', '400-340', '370-310', '340-300', '300-250', '250-200'],
+  ['800-700', '720-625', '675-600', '640-570', '575-500', '525-450', '475-400', '440-370', '400-340', '370-310', '340-300', '300-250', '250-200', '250-200'],
+  ['720-625', '675-600', '640-570', '575-500', '525-450', '475-400', '440-370', '400-340', '370-310', '340-300', '300-250', '250-200', '250-200', '250-200'],
+  ['675-600', '640-570', '575-500', '525-450', '475-400', '440-370', '400-340', '370-310', '340-300', '300-250', '250-200', '250-200', '250-200', '200-150']
+];
+
+const EASTON_301055A_AC_ALL_CARBON_DRAW_WEIGHT_BANDS = {
+  compound: [
+    { label: '<17', min: null, max: 17, maxExclusive: true },
+    { label: '17-23', min: 17, max: 23 },
+    { label: '24-28', min: 24, max: 28 },
+    { label: '29-34', min: 29, max: 34 },
+    { label: '35-39', min: 35, max: 39 },
+    { label: '40-44', min: 40, max: 44 },
+    { label: '45-49', min: 45, max: 49 },
+    { label: '50-54', min: 50, max: 54 },
+    { label: '55-59', min: 55, max: 59 },
+    { label: '60-64', min: 60, max: 64 },
+    { label: '65-69', min: 65, max: 69 },
+    { label: '70-76', min: 70, max: 76 }
+  ],
+  recurve: [
+    { label: '<20 lbs.', min: null, max: 20, maxExclusive: true },
+    { label: '21-26 lbs.', min: 21, max: 26 },
+    { label: '27-31 lbs.', min: 27, max: 31 },
+    { label: '32-35 lbs.', min: 32, max: 35 },
+    { label: '36-39 lbs.', min: 36, max: 39 },
+    { label: '40-43 lbs.', min: 40, max: 43 },
+    { label: '44-47 lbs.', min: 44, max: 47 },
+    { label: '48-52 lbs.', min: 48, max: 52 },
+    { label: '53-57 lbs.', min: 53, max: 57 },
+    { label: '58-62 lbs.', min: 58, max: 62 },
+    { label: '63-67 lbs.', min: 63, max: 67 },
+    { label: '68-73 lbs.', min: 68, max: 73 }
+  ]
+};
+
+const EASTON_301055A_ADJUSTMENT_RULES = [
+  {
+    sourceSection: 'ADJUST THE CHART TO YOUR BOW SET-UP',
+    text: 'Chart baseline: Bow Speed Rating 301-320 FPS, glue-in 100 grain points, and a mechanical release aid.'
+  },
+  {
+    sourceSection: 'ADJUST THE CHART TO YOUR BOW SET-UP',
+    text: 'Compound bow speed rating: up to 275 FPS = -10 lbs; 276-300 FPS = -5 lbs; 301-320 FPS = no adjustment; 321-340 FPS = +5 lbs; 341-350 FPS = +10 lbs; 351 FPS or higher = +15 lbs.'
+  },
+  {
+    sourceSection: 'ADJUST THE CHART TO YOUR BOW SET-UP',
+    text: 'Compound release type: mechanical release = no adjustment; finger release = +5 lbs.'
+  },
+  {
+    sourceSection: 'ADJUST THE CHART TO YOUR BOW SET-UP',
+    text: 'Points and inserts: points <100 grains = -3 lbs per 25 grains below 100; points =100 grains = no adjustment; points >100 grains = +3 lbs per 25 grains above 100.'
+  },
+  {
+    sourceSection: 'ADJUST THE CHART TO YOUR BOW SET-UP',
+    text: 'Recurve bow: carbon competition limb = no adjustment; wood/glass beginner limb = -5 lbs.'
+  }
+];
 
 export const SPINE_TABLES = {
   easton_target: {
@@ -26,6 +101,30 @@ export const SPINE_TABLES = {
     },
     adjustments: {},
     rows: []
+  },
+
+  easton_target_301055A_ac_all_carbon: {
+    manufacturer: 'Easton',
+    tableId: 'easton_target_301055A_ac_all_carbon',
+    sourceName: 'Target Arrow Size Selection',
+    sourceFile: '301055-A-Arrow-Shaft-Selection-Target.pdf',
+    sourceUrl: '',
+    chartVersion: '301055-A',
+    documentType: 'chart spine',
+    integrationRole: 'direct-spine-table',
+    bowFamily: 'target',
+    bowTypes: ['compound', 'recurve'],
+    arrowMaterialFamily: 'A/C all-carbon',
+    status: 'verified',
+    baseline: {
+      unitNotes: {
+        arrowLength: 'Measured to throat of nock.',
+        pointWeight: 'Glue-in 100 grain points baseline.',
+        spine: STATIC_SPINE_NOTE
+      }
+    },
+    adjustmentRules: EASTON_301055A_ADJUSTMENT_RULES,
+    rows: buildEaston301055AAcAllCarbonRows()
   },
 
   goldtip_selector: {
@@ -190,26 +289,90 @@ export const SPINE_TABLES = {
   }
 };
 
+function buildEaston301055AAcAllCarbonRows() {
+  return [
+    ...buildRowsForBowType('compound'),
+    ...buildRowsForBowType('recurve')
+  ];
+}
+
+function buildRowsForBowType(bowType) {
+  const drawWeightBands = EASTON_301055A_AC_ALL_CARBON_DRAW_WEIGHT_BANDS[bowType];
+  const releaseTypeReference = bowType === 'compound' ? 'mechanical' : 'finger';
+  const bowSpeedClassReference = bowType === 'compound' ? '301-320 FPS' : null;
+
+  return drawWeightBands.flatMap((band, rowIndex) =>
+    EASTON_301055A_AC_ALL_CARBON_LENGTHS_IN.map((arrowLengthIn, columnIndex) => {
+      const recommendedSpinesLabel = EASTON_301055A_AC_ALL_CARBON_MATRIX[rowIndex][columnIndex];
+
+      return {
+        manufacturer: 'Easton',
+        tableId: 'easton_target_301055A_ac_all_carbon',
+        chartVersion: '301055-A',
+        sourceFile: '301055-A-Arrow-Shaft-Selection-Target.pdf',
+        sourcePageLabel: '1',
+        sourcePageIndex: 0,
+        sourceSection: EASTON_301055A_SOURCE_SECTION,
+        rowId: `easton-301055a-ac-all-carbon-${bowType}-${normalizeIdPart(band.label)}-${arrowLengthIn}in`,
+        status: 'verified',
+        bowType,
+        arrowMaterialFamily: 'A/C all-carbon',
+        drawWeightLabel: band.label,
+        drawWeightMinLbs: band.min,
+        drawWeightMaxLbs: band.max,
+        drawWeightMaxExclusive: Boolean(band.maxExclusive),
+        arrowLengthMinIn: arrowLengthIn,
+        arrowLengthMaxIn: arrowLengthIn,
+        pointWeightReferenceGrains: 100,
+        releaseTypeReference,
+        bowSpeedClassReference,
+        recommendedSpinesLabel,
+        recommendedSpines: parseRecommendedSpinesLabel(recommendedSpinesLabel),
+        shaftFamilies: [],
+        notes: [],
+        confidence: 'manufacturer-table'
+      };
+    })
+  );
+}
+
+function parseRecommendedSpinesLabel(label) {
+  return label.split('-').map(value => Number(value));
+}
+
+function normalizeIdPart(value) {
+  return value
+    .toLowerCase()
+    .replace(/lbs\./g, 'lbs')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
 // Format cible pour une future ligne, sans interpolation ni extrapolation :
 //
 // {
-//   rowId: 'source-specific-id',
+//   manufacturer: 'Easton',
+//   tableId: 'easton_target_301055A_ac_all_carbon',
+//   chartVersion: '301055-A',
+//   sourceFile: '301055-A-Arrow-Shaft-Selection-Target.pdf',
+//   sourcePageLabel: '1',
+//   sourcePageIndex: 0,
+//   sourceSection: 'A/C • ALL-CARBON ARROW CUT LENGTH',
 //   status: 'verified',
-//   sourcePage: 1,
-//   sourceSection: 'A/C all-carbon arrow cut length',
-//   criteria: {
-//     bowType: 'compound',
-//     releaseType: 'mechanical',
-//     speedClass: '301-320-fps',
-//     drawWeightLbs: { min: 40, max: 44 },
-//     arrowLengthIn: { min: 29, max: 29 },
-//     pointWeightGrains: { min: 100, max: 100 }
-//   },
-//   recommendation: {
-//     spines: ['575-500'],
-//     shaftFamilies: []
-//   },
-//   notes: []
+//   bowType: 'compound',
+//   arrowMaterialFamily: 'A/C all-carbon',
+//   drawWeightMinLbs: 40,
+//   drawWeightMaxLbs: 44,
+//   arrowLengthMinIn: 29,
+//   arrowLengthMaxIn: 29,
+//   pointWeightReferenceGrains: 100,
+//   releaseTypeReference: 'mechanical',
+//   bowSpeedClassReference: '301-320 FPS',
+//   recommendedSpinesLabel: '575-500',
+//   recommendedSpines: [575, 500],
+//   shaftFamilies: [],
+//   notes: [],
+//   confidence: 'manufacturer-table'
 // }
 //
 // Tant qu'une source garde `status: "metadata-only"`, elle ne doit produire

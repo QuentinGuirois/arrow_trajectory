@@ -23,23 +23,28 @@ Exemple de forme cible :
 
 ```js
 {
-  rowId: 'easton-target-ac-carbon-compound-40-44lb-29in',
+  manufacturer: 'Easton',
+  tableId: 'easton_target_301055A_ac_all_carbon',
+  chartVersion: '301055-A',
+  sourceFile: '301055-A-Arrow-Shaft-Selection-Target.pdf',
+  sourcePageLabel: '1',
+  sourcePageIndex: 0,
+  sourceSection: 'A/C • ALL-CARBON ARROW CUT LENGTH',
   status: 'verified',
-  sourcePage: 1,
-  sourceSection: 'A/C all-carbon arrow cut length',
-  criteria: {
-    bowType: 'compound',
-    releaseType: 'mechanical',
-    speedClass: '301-320-fps',
-    drawWeightLbs: { min: 40, max: 44 },
-    arrowLengthIn: { min: 29, max: 29 },
-    pointWeightGrains: { min: 100, max: 100 }
-  },
-  recommendation: {
-    spines: ['575-500'],
-    shaftFamilies: []
-  },
-  notes: []
+  bowType: 'compound',
+  arrowMaterialFamily: 'A/C all-carbon',
+  drawWeightMinLbs: 40,
+  drawWeightMaxLbs: 44,
+  arrowLengthMinIn: 29,
+  arrowLengthMaxIn: 29,
+  pointWeightReferenceGrains: 100,
+  releaseTypeReference: 'mechanical',
+  bowSpeedClassReference: '301-320 FPS',
+  recommendedSpinesLabel: '575-500',
+  recommendedSpines: [575, 500],
+  shaftFamilies: [],
+  notes: [],
+  confidence: 'manufacturer-table'
 }
 ```
 
@@ -50,7 +55,8 @@ Les valeurs numériques ci-dessus sont uniquement un exemple de forme ; elles ne
 Chaque table doit conserver :
 
 - `sourceFile` : chemin local exact ;
-- `sourcePage` : page si le document est paginé ;
+- `sourcePageLabel` : numéro visible pour un lecteur humain ;
+- `sourcePageIndex` : index interne zéro-based si le moteur en a besoin ;
 - `sourceSection` : titre de section ou sous-table visible ;
 - `chartVersion` : version, référence produit ou révision visible ;
 - `sourceUrl` : uniquement si elle est imprimée dans le document.

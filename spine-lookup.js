@@ -22,7 +22,8 @@ export function lookupRecommendedSpine(params = {}, tableId = params.spineTableI
   }
 
   return {
-    recommendedSpines: [...matchedRow.recommendation.spines],
+    recommendedSpines: [...matchedRow.recommendedSpines],
+    recommendedSpinesLabel: matchedRow.recommendedSpinesLabel,
     confidence: 'table',
     sourceName: table.sourceName,
     sourceFile: table.sourceFile,
@@ -30,7 +31,8 @@ export function lookupRecommendedSpine(params = {}, tableId = params.spineTableI
     chartVersion: table.chartVersion,
     matchedRow,
     notes: normalizeNotes(matchedRow.notes),
-    qualitativeTrends
+    qualitativeTrends,
+    adjustmentRules: normalizeAdjustmentRules(table.adjustmentRules)
   };
 }
 
@@ -42,13 +44,17 @@ function hasVerifiedRows(table) {
 
 function isVerifiedRow(row) {
   return row?.status === 'verified' &&
-    Array.isArray(row?.recommendation?.spines) &&
-    row.recommendation.spines.length > 0;
+    row?.confidence === 'manufacturer-table' &&
+    Array.isArray(row?.recommendedSpines) &&
+    row.recommendedSpines.length > 0 &&
+    typeof row?.recommendedSpinesLabel === 'string' &&
+    row.recommendedSpinesLabel.length > 0;
 }
 
 function buildNoDataResult(table, qualitativeTrends) {
   return {
     recommendedSpines: [],
+    recommendedSpinesLabel: '',
     confidence: 'no-data',
     sourceName: table?.sourceName || '',
     sourceFile: table?.sourceFile || '',
@@ -56,42 +62,63 @@ function buildNoDataResult(table, qualitativeTrends) {
     chartVersion: table?.chartVersion || '',
     matchedRow: null,
     notes: [SPINE_UNAVAILABLE_MESSAGE],
-    qualitativeTrends
+    qualitativeTrends,
+    adjustmentRules: normalizeAdjustmentRules(table?.adjustmentRules)
   };
 }
 
 function rowMatchesParams(row, params) {
-  if (!row?.criteria) return false;
-
-  return Object.entries(row.criteria).every(([key, expected]) => {
-    const actual = params[key];
-    if (actual === undefined || actual === null || actual === '') return false;
-
-    if (isRange(expected)) {
-      return typeof actual === 'number' &&
-        actual >= expected.min &&
-        actual <= expected.max;
-    }
-
-    if (Array.isArray(expected)) {
-      return expected.includes(actual);
-    }
-
-    return actual === expected;
-  });
+  if (!row || params.bowType !== row.bowType) return false;
+  if (!matchesDrawWeight(row, params.drawWeightLbs)) return false;
+  if (!matchesArrowLength(row, params.arrowLengthIn)) return false;
+  if (!matchesPointWeightReference(row, params.pointWeightGrains)) return false;
+  if (!matchesReleaseTypeReference(row, params.releaseType)) return false;
+  if (!matchesBowSpeedClassReference(row, params.fps)) return false;
+  return true;
 }
 
-function isRange(value) {
-  return Boolean(
-    value &&
-    typeof value === 'object' &&
-    Number.isFinite(value.min) &&
-    Number.isFinite(value.max)
-  );
+function matchesDrawWeight(row, actual) {
+  if (!Number.isFinite(actual) || !Number.isFinite(row.drawWeightMaxLbs)) return false;
+  const aboveMin = row.drawWeightMinLbs === null || actual >= row.drawWeightMinLbs;
+  const belowMax = row.drawWeightMaxExclusive
+    ? actual < row.drawWeightMaxLbs
+    : actual <= row.drawWeightMaxLbs;
+  return aboveMin && belowMax;
+}
+
+function matchesArrowLength(row, actual) {
+  return Number.isFinite(actual) &&
+    actual >= row.arrowLengthMinIn &&
+    actual <= row.arrowLengthMaxIn;
+}
+
+function matchesPointWeightReference(row, actual) {
+  if (!Number.isFinite(row.pointWeightReferenceGrains)) return true;
+  return Number.isFinite(actual) && actual === row.pointWeightReferenceGrains;
+}
+
+function matchesReleaseTypeReference(row, actual) {
+  if (!row.releaseTypeReference) return true;
+  return Boolean(actual) && normalizeReleaseType(actual) === row.releaseTypeReference;
+}
+
+function matchesBowSpeedClassReference(row, actualFps) {
+  if (!row.bowSpeedClassReference) return true;
+  if (!Number.isFinite(actualFps)) return false;
+  return actualFps >= 301 && actualFps <= 320;
+}
+
+function normalizeReleaseType(value) {
+  if (value === 'fingers') return 'finger';
+  return value;
 }
 
 function normalizeNotes(notes) {
   if (Array.isArray(notes)) return [...notes];
   if (typeof notes === 'string' && notes.trim()) return [notes];
   return [];
+}
+
+function normalizeAdjustmentRules(adjustmentRules) {
+  return Array.isArray(adjustmentRules) ? adjustmentRules.map(rule => ({ ...rule })) : [];
 }
