@@ -86,7 +86,7 @@ L’étude scientifique locale documente les limites du spine statique et les pa
 - `calibration.js` : vitesse chrono/utilisateur et sight marks par interpolation.
 - `tuning-diagnostics.js` : porpoising/fishtailing comparatifs.
 - `physics-advanced.js` : densité air, vent, Cd simplifié avec Reynolds corrigé.
-- `trajectory.worker-archery.js` : solveur 3D dans Web Worker.
+- `trajectory.worker-archery.js` : solveur 3D point-masse dans Web Worker.
 - `plotly-charts.js` : graphes Plotly.
 - `share-schema.js` : partage URL versionné et localStorage.
 - `style-extra.css` : thème futuriste et layout.
@@ -99,7 +99,29 @@ Le graphe 3D Plotly affiche la trajectoire du centre de masse :
 - Y = dérive latérale en mètres ;
 - Z = hauteur en mètres.
 
-Le tuning ne déforme pas la trajectoire physique. Porpoising, fishtailing et AoA sont des diagnostics séparés.
+Ce moteur simule le centre de masse de la flèche, pas sa flexion.
+
+La trajectoire physique est produite par le vent relatif `vRel = vArrow - windVector`, la gravité et la traînée vectorielle. Le tuning ne déforme pas cette trajectoire : porpoising, fishtailing et AoA restent des diagnostics séparés.
+
+Chaque point du moteur `pointMass3D-v1` expose au minimum :
+
+```js
+{
+  x,
+  y,
+  z,
+  time,
+  speedMps,
+  fps,
+  energyJ,
+  momentum,
+  driftM,
+  dropM,
+  re,
+  cd,
+  aeroRegime
+}
+```
 
 ## Contrat physique normalisé
 
@@ -140,7 +162,7 @@ Les ids HTML historiques restent inchangés (`fps`, `poidsGr`, `diameter`, `scop
 }
 ```
 
-`fps` reste la vérité chrono. `simulation-params.js` accepte encore les conventions legacy utiles à la transition (diamètre en mm ou m, offset de visée en cm ou m) puis expose des unités physiques explicites. Le message Worker transporte temporairement les deux couches : `params` pour la compatibilité avec le moteur actuel, `simulation` pour la migration vers une architecture 3D plus nette.
+`fps` reste la vérité chrono. `simulation-params.js` accepte encore les conventions legacy utiles à la transition (diamètre en mm ou m, offset de visée en cm ou m) puis expose des unités physiques explicites. Le message Worker transporte temporairement les deux couches : `params` pour la compatibilité avec les sous-modèles encore non migrés, `simulation` pour la frontière physique normalisée.
 
 ## Limites
 

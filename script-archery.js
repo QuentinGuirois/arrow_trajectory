@@ -414,6 +414,7 @@ function runSim() {
       params,
       label: `${baseLabel} (courant)`,
       color: '#ffffff',
+      modelVersion: e.data.modelVersion,
       stats: e.data.stats,
       curveData: e.data.positions,
       arrow: e.data.arrow,

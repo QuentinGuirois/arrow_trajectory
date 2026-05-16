@@ -2,7 +2,12 @@
 // Vitesse de sortie: la saisie chrono/utilisateur est la source de vérité.
 
 import { fpsToMetersPerSecond, clamp, degreesToRadians } from './units.js';
-import { interpolatePointAtDistance } from './util.js';
+import {
+  interpolatePointAtDistance,
+  pointDriftM,
+  pointEnergyJ,
+  pointHeightM
+} from './util.js';
 
 export function resolveLaunch(params) {
   const fps = clamp(params.fps, 80, 420);
@@ -21,13 +26,13 @@ export function buildSightMarks(points, params) {
   return distances.map(distance => {
     const p = interpolatePointAtDistance(points, distance);
     if (!p) return null;
-    const scopeY = (params.shootingHeight + params.scopeOffset) + p.x * Math.tan(degreesToRadians(params.scopeAngleDeg));
+    const scopeHeightM = (params.shootingHeight + params.scopeOffset) + p.x * Math.tan(degreesToRadians(params.scopeAngleDeg));
     return {
       distance,
-      holdoverCm: (p.y - scopeY) * 100,
-      driftCm: p.z * 100,
+      holdoverCm: (pointHeightM(p) - scopeHeightM) * 100,
+      driftCm: pointDriftM(p) * 100,
       time: p.time,
-      energy: p.energy
+      energy: pointEnergyJ(p)
     };
   }).filter(Boolean);
 }

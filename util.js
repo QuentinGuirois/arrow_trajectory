@@ -23,7 +23,10 @@ export function interpolatePointAtDistance(points, distance) {
     const b = points[i];
     if (b.x >= distance) {
       const t = (distance - a.x) / Math.max(0.000001, b.x - a.x);
-      const out = { distance };
+      const out = {
+        distance,
+        ...(b.modelVersion ? { modelVersion: b.modelVersion } : {})
+      };
       Object.keys(b).forEach(key => {
         if (typeof a[key] === 'number' && typeof b[key] === 'number') {
           out[key] = a[key] + (b[key] - a[key]) * t;
@@ -33,4 +36,27 @@ export function interpolatePointAtDistance(points, distance) {
     }
   }
   return null;
+}
+
+export const POINT_MASS_3D_MODEL_VERSION = 'pointMass3D-v1';
+
+export function isPointMass3DPoint(point) {
+  return point?.modelVersion === POINT_MASS_3D_MODEL_VERSION
+    || (
+      Number.isFinite(point?.driftM)
+      && Number.isFinite(point?.dropM)
+      && Number.isFinite(point?.speedMps)
+    );
+}
+
+export function pointHeightM(point) {
+  return isPointMass3DPoint(point) ? point.z : point.y;
+}
+
+export function pointDriftM(point) {
+  return isPointMass3DPoint(point) ? point.y : point.z;
+}
+
+export function pointEnergyJ(point) {
+  return Number.isFinite(point?.energyJ) ? point.energyJ : point?.energy;
 }

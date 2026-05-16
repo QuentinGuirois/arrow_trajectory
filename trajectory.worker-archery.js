@@ -1,5 +1,6 @@
 // trajectory.worker-archery.js
 // Solveur balistique 3D exécuté dans un Web Worker.
+// Ce moteur simule le centre de masse de la flèche, pas sa flexion.
 
 import { buildArrow } from './arrow-builder.js';
 import { resolveLaunch } from './calibration.js';
@@ -10,31 +11,55 @@ import {
   computeAdvancedCd,
 } from './physics-advanced.js';
 import { calculateEnergy, metersPerSecondToFPS } from './physics-archery.js';
-import { normalizeSimulationParams } from './simulation-params.js';
+import {
+  normalizeLegacySimulationParams,
+  normalizeSimulationParams
+} from './simulation-params.js';
+import { POINT_MASS_3D_MODEL_VERSION } from './util.js';
 
-function solveTrajectory3D(params, simulationInput) {
+const DEFAULT_DT_S = 0.001;
+const MIN_DT_S = 0.0001;
+const MAX_DT_S = 0.02;
+const MAX_TIME_S = 10;
+const MAX_DISTANCE_M = 250;
+const MIN_RELATIVE_SPEED_MPS = 0.05;
+
+// Convention du solveur :
+// x = distance vers la cible, y = dérive latérale, z = hauteur.
+export function calculateTrajectory3D(simParams = {}) {
+  const inputParams = simParams.params ?? simParams;
+  const params = normalizeLegacySimulationParams(inputParams);
   const arrow = buildArrow(params);
   const launch = resolveLaunch(params, arrow);
   const tuning = calculateTuningModel(params, arrow);
-  // Le worker accepte désormais le contrat physique normalisé, tout en conservant
-  // les paramètres plats legacy pour les sous-modèles encore non migrés.
-  const simulation = simulationInput ?? normalizeSimulationParams(params, { arrow, launch });
-  const rho = simulation.atmosphere.densityKgM3;
-  const wind = simulation.wind.vectorMps;
+  const simulation = simParams.simulation ?? normalizeSimulationParams(params, { arrow, launch });
+  const rho = finiteOr(simulation.atmosphere?.densityKgM3, 1.2);
+  const dynamicViscosity = finiteOr(
+    simulation.atmosphere?.dynamicViscosityPaS,
+    PHYSICS_CONSTANTS.airViscosity
+  );
+  const wind = finiteVector3(simulation.wind?.vectorMps);
+  const area = Math.PI * Math.pow(simulation.arrow.diameterM, 2) / 4;
+  const dt = resolveTimeStep(params.dt);
+  const maxTimeS = finitePositiveOr(params.maxTimeS, MAX_TIME_S);
+  const maxDistanceM = finitePositiveOr(params.maxDistanceM, MAX_DISTANCE_M);
+  const maxIterations = Math.ceil(maxTimeS / dt) + 1;
   const velocity = buildInitialVelocity(params, launch);
-  const dt = params.dt || 0.001;
-  const maxIterations = 120000;
 
   let x = 0;
-  let y = simulation.launch.heightM;
-  let z = 0;
+  let y = 0;
+  let z = simulation.launch.heightM;
   let vx = velocity.x;
   let vy = velocity.y;
   let vz = velocity.z;
   let time = 0;
+
   const positions = [];
-  const initialSpeed = Math.hypot(vx, vy, vz);
+  const initialRel = relativeVelocity({ vx, vy, vz }, wind);
+  const initialRelSpeed = Math.hypot(initialRel.x, initialRel.y, initialRel.z);
+  const initialRe = calculateReynoldsNumber(rho, initialRelSpeed, simulation.arrow.diameterM, dynamicViscosity);
   const initialTune = oscillationAt(0, tuning);
+  const initialCd = computeAdvancedCd(params, arrow, initialRelSpeed, 0, rho);
   positions.push(buildPoint({
     x,
     y,
@@ -44,30 +69,34 @@ function solveTrajectory3D(params, simulationInput) {
     vz,
     time,
     arrow,
-    speed: initialSpeed,
+    speedMps: Math.hypot(vx, vy, vz),
+    relativeSpeedMps: initialRelSpeed,
+    launchHeightM: simulation.launch.heightM,
     tune: initialTune,
-    aoaRad: estimateDiagnosticAoaRad(initialTune, initialSpeed),
-    cd: 0,
+    aoaRad: estimateDiagnosticAoaRad(initialTune, initialRelSpeed),
+    cd: initialCd,
+    re: initialRe,
     params
   }));
 
   for (let iter = 0; iter < maxIterations; iter++) {
-    if (y < 0) break;
-    const prev = { x, y, z, time };
-    const relVx = vx - wind.x;
-    const relVy = vy - wind.y;
-    const stabilityWindFactor = 1 + Math.max(0, 1.1 - arrow.vaneDragFactor) * 0.15;
-    const relVz = vz - wind.z * stabilityWindFactor;
-    const relSpeed = Math.hypot(relVx, relVy, relVz);
-    if (relSpeed < 0.05) break;
+    if (z <= 0 || time >= maxTimeS || Math.abs(x) >= maxDistanceM) break;
+
+    const previous = { x, y, z, vx, vy, vz, time };
+    const rel = relativeVelocity({ vx, vy, vz }, wind);
+    const relativeSpeedMps = Math.hypot(rel.x, rel.y, rel.z);
+    if (!Number.isFinite(relativeSpeedMps) || relativeSpeedMps < MIN_RELATIVE_SPEED_MPS) break;
 
     const tune = oscillationAt(time, tuning);
-    const aoaRad = estimateDiagnosticAoaRad(tune, relSpeed);
-    const cd = computeAdvancedCd(params, arrow, relSpeed, 0, rho);
-    const drag = 0.5 * rho * cd * arrow.frontalAreaM2 * relSpeed * relSpeed;
-    const ax = -(drag / arrow.totalMassKg) * (relVx / relSpeed);
-    const ay = -(drag / arrow.totalMassKg) * (relVy / relSpeed) - PHYSICS_CONSTANTS.gravity;
-    const az = -(drag / arrow.totalMassKg) * (relVz / relSpeed);
+    const aoaRad = estimateDiagnosticAoaRad(tune, relativeSpeedMps);
+    const cd = computeAdvancedCd(params, arrow, relativeSpeedMps, 0, rho);
+    const re = calculateReynoldsNumber(rho, relativeSpeedMps, simulation.arrow.diameterM, dynamicViscosity);
+
+    // Fd = -0.5 * rho * Cd * area * |vRel| * vRel
+    const dragFactor = -0.5 * rho * cd * area * relativeSpeedMps / arrow.totalMassKg;
+    const ax = dragFactor * rel.x;
+    const ay = dragFactor * rel.y;
+    const az = dragFactor * rel.z - PHYSICS_CONSTANTS.gravity;
 
     vx += ax * dt;
     vy += ay * dt;
@@ -77,23 +106,56 @@ function solveTrajectory3D(params, simulationInput) {
     z += vz * dt;
     time += dt;
 
-    const speed = Math.hypot(vx, vy, vz);
-    const point = buildPoint({ x, y, z, vx, vy, vz, time, arrow, speed, tune, aoaRad, cd, params });
-    if (y <= 0) {
-      const ratio = prev.y / Math.max(0.000001, prev.y - y);
-      point.x = prev.x + (x - prev.x) * ratio;
-      point.y = 0;
-      point.z = prev.z + (z - prev.z) * ratio;
-      point.time = prev.time + dt * ratio;
-      positions.push(point);
+    const next = { x, y, z, vx, vy, vz, time };
+    if (!isFiniteState(next)) break;
+
+    if (z <= 0) {
+      const ratio = previous.z / Math.max(0.000001, previous.z - z);
+      const impact = interpolateState(previous, next, ratio);
+      const impactTune = oscillationAt(impact.time, tuning);
+      const impactRel = relativeVelocity(impact, wind);
+      const impactRelSpeed = Math.hypot(impactRel.x, impactRel.y, impactRel.z);
+      const impactRe = calculateReynoldsNumber(rho, impactRelSpeed, simulation.arrow.diameterM, dynamicViscosity);
+      const impactCd = computeAdvancedCd(params, arrow, impactRelSpeed, 0, rho);
+      positions.push(buildPoint({
+        ...impact,
+        z: 0,
+        arrow,
+        speedMps: Math.hypot(impact.vx, impact.vy, impact.vz),
+        relativeSpeedMps: impactRelSpeed,
+        launchHeightM: simulation.launch.heightM,
+        tune: impactTune,
+        aoaRad: estimateDiagnosticAoaRad(impactTune, impactRelSpeed),
+        cd: impactCd,
+        re: impactRe,
+        params
+      }));
       break;
     }
-    positions.push(point);
-    if (time > 10 || x > 250) break;
+
+    positions.push(buildPoint({
+      x,
+      y,
+      z,
+      vx,
+      vy,
+      vz,
+      time,
+      arrow,
+      speedMps: Math.hypot(vx, vy, vz),
+      relativeSpeedMps,
+      launchHeightM: simulation.launch.heightM,
+      tune,
+      aoaRad,
+      cd,
+      re,
+      params
+    }));
   }
 
   const finalPoint = positions[positions.length - 1];
   return {
+    modelVersion: POINT_MASS_3D_MODEL_VERSION,
     positions,
     arrow,
     launch,
@@ -104,11 +166,30 @@ function solveTrajectory3D(params, simulationInput) {
   };
 }
 
-function buildPoint({ x, y, z, vx, vy, vz, time, arrow, speed, tune, aoaRad, cd, params }) {
+function buildPoint({
+  x,
+  y,
+  z,
+  vx,
+  vy,
+  vz,
+  time,
+  arrow,
+  speedMps,
+  relativeSpeedMps,
+  launchHeightM,
+  tune,
+  aoaRad,
+  cd,
+  re,
+  params
+}) {
   const dispersionBase = params.dispersionEnabled
     ? Math.hypot(params.releaseErrorVerticalMm, params.releaseErrorLateralMm, params.gustPercent * 0.04) * 0.35 + 0.8
     : 0;
+  const energyJ = calculateEnergy(arrow.totalMassKg, speedMps);
   return {
+    modelVersion: POINT_MASS_3D_MODEL_VERSION,
     x,
     y,
     z,
@@ -116,16 +197,43 @@ function buildPoint({ x, y, z, vx, vy, vz, time, arrow, speed, tune, aoaRad, cd,
     vy,
     vz,
     time,
-    speed,
-    fps: metersPerSecondToFPS(speed),
-    energy: calculateEnergy(arrow.totalMassKg, speed),
-    momentum: arrow.totalMassKg * speed,
+    speedMps,
+    // Aliases conservés pendant la migration des consommateurs historiques.
+    speed: speedMps,
+    fps: metersPerSecondToFPS(speedMps),
+    energyJ,
+    energy: energyJ,
+    momentum: arrow.totalMassKg * speedMps,
+    driftM: y,
+    dropM: launchHeightM - z,
+    re,
+    cd,
+    aeroRegime: classifyAeroRegime(re),
+    relativeSpeedMps,
     porpoiseCm: tune.verticalCm,
     fishtailCm: tune.lateralCm,
     aoaDeg: aoaRad * 180 / Math.PI,
-    cd,
     dispersionRadiusCm: dispersionBase * (1 + x / 65)
   };
+}
+
+function relativeVelocity(velocity, wind) {
+  return {
+    x: velocity.vx - wind.x,
+    y: velocity.vy - wind.y,
+    z: velocity.vz - wind.z
+  };
+}
+
+function calculateReynoldsNumber(rho, relativeSpeedMps, diameterM, dynamicViscosityPaS) {
+  return rho * relativeSpeedMps * diameterM / dynamicViscosityPaS;
+}
+
+function classifyAeroRegime(reynolds) {
+  if (!Number.isFinite(reynolds)) return 'unknown';
+  if (reynolds < 20000) return 'low-Re';
+  if (reynolds < 80000) return 'mid-Re';
+  return 'high-Re';
 }
 
 function estimateDiagnosticAoaRad(tune, speed) {
@@ -137,28 +245,75 @@ function calculateStats(points, arrow, finalPoint) {
   if (!points.length || !finalPoint) {
     return { portée: 0, hauteur: 0, tvol: 0, vfinal: 0, energyImpact: 0, momentumImpact: 0, driftImpactCm: 0, impactAngleDeg: 0 };
   }
-  const maxY = points.reduce((max, p) => Math.max(max, p.y), -Infinity);
+  const maxZ = points.reduce((max, p) => Math.max(max, p.z), -Infinity);
   return {
     portée: finalPoint.x,
-    hauteur: maxY,
+    hauteur: maxZ,
     tvol: finalPoint.time,
     vfinal: finalPoint.fps,
-    energyImpact: finalPoint.energy,
+    energyImpact: finalPoint.energyJ,
     momentumImpact: finalPoint.momentum,
-    driftImpactCm: finalPoint.z * 100,
-    impactAngleDeg: Math.atan2(finalPoint.vy, Math.hypot(finalPoint.vx, finalPoint.vz)) * 180 / Math.PI,
+    driftImpactCm: finalPoint.y * 100,
+    impactAngleDeg: Math.atan2(finalPoint.vz, Math.hypot(finalPoint.vx, finalPoint.vy)) * 180 / Math.PI,
     focPercent: arrow.focPercent,
     stabilityLabel: arrow.stabilityLabel
   };
 }
 
-self.onmessage = (e) => {
-  if (e.data?.type !== 'calcTrajArchery') return;
-  try {
-    const { params, simulation, requestId } = e.data;
-    const result = solveTrajectory3D(params, simulation);
-    self.postMessage({ ok: true, requestId, ...result });
-  } catch (err) {
-    self.postMessage({ ok: false, requestId: e.data?.requestId, error: String(err?.stack || err) });
-  }
-};
+function interpolateState(a, b, ratio) {
+  return {
+    x: a.x + (b.x - a.x) * ratio,
+    y: a.y + (b.y - a.y) * ratio,
+    z: a.z + (b.z - a.z) * ratio,
+    vx: a.vx + (b.vx - a.vx) * ratio,
+    vy: a.vy + (b.vy - a.vy) * ratio,
+    vz: a.vz + (b.vz - a.vz) * ratio,
+    time: a.time + (b.time - a.time) * ratio
+  };
+}
+
+function resolveTimeStep(value) {
+  const dt = finitePositiveOr(value, DEFAULT_DT_S);
+  return Math.min(MAX_DT_S, Math.max(MIN_DT_S, dt));
+}
+
+function finitePositiveOr(value, fallback) {
+  return Number.isFinite(value) && value > 0 ? value : fallback;
+}
+
+function finiteOr(value, fallback) {
+  return Number.isFinite(value) ? value : fallback;
+}
+
+function finiteVector3(vector = {}) {
+  return {
+    x: finiteOr(vector.x, 0),
+    y: finiteOr(vector.y, 0),
+    z: finiteOr(vector.z, 0)
+  };
+}
+
+function isFiniteState(state) {
+  return [
+    state.x,
+    state.y,
+    state.z,
+    state.vx,
+    state.vy,
+    state.vz,
+    state.time
+  ].every(Number.isFinite);
+}
+
+if (typeof self !== 'undefined') {
+  self.onmessage = (e) => {
+    if (e.data?.type !== 'calcTrajArchery') return;
+    try {
+      const { params, simulation, requestId } = e.data;
+      const result = calculateTrajectory3D({ params, simulation });
+      self.postMessage({ ok: true, requestId, ...result });
+    } catch (err) {
+      self.postMessage({ ok: false, requestId: e.data?.requestId, error: String(err?.stack || err) });
+    }
+  };
+}

@@ -21,13 +21,14 @@ export function calculateAirDensityAdvanced(params) {
 }
 
 export function windVector(params) {
+  // Convention globale : x avant, y latéral, z vertical.
   const speed = kmhToMps(params.windSpeedKmh);
   const rad = degreesToRadians(params.windDirectionDeg);
   const gust = 1 + clamp(params.gustPercent, 0, 80) / 200;
   return {
     x: -Math.cos(rad) * speed * gust,
-    y: 0,
-    z: -Math.sin(rad) * speed * gust
+    y: -Math.sin(rad) * speed * gust,
+    z: 0
   };
 }
 
@@ -53,7 +54,7 @@ export function buildInitialVelocity(params, launch) {
   const lateralMps = params.releaseErrorLateralMm * 0.015;
   return {
     x: speed * Math.cos(pitch),
-    y: speed * Math.sin(pitch) + params.releaseErrorVerticalMm * 0.015,
-    z: lateralMps
+    y: lateralMps,
+    z: speed * Math.sin(pitch) + params.releaseErrorVerticalMm * 0.015
   };
 }
