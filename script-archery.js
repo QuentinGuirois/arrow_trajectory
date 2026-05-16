@@ -38,8 +38,6 @@ const numericFields = {
   balancePointIn: 0,
   drawWeightLbs: 35,
   drawLengthIn: 28,
-  letOffPercent: 0,
-  camAggressiveness: 0.4,
   pressureHpa: 1020,
   temperatureCelsius: 20,
   humidityPercent: 50,
@@ -87,6 +85,7 @@ function getFormValues() {
   Object.entries(numericFields).forEach(([id, fallback]) => {
     params[id] = readNumber(id, fallback);
   });
+  params.vaneWeightTotalGrains = readOptionalNumber('vaneWeightTotalGrains');
   selectFields.forEach(id => {
     if ($(id)) params[id] = $(id).value;
   });
@@ -109,6 +108,11 @@ function applyParamsToForm(params) {
     if (id === 'scopeOffset' && Math.abs(value) < 1) value *= 100;
     $(id).value = value;
   });
+  if ($('vaneWeightTotalGrains')) {
+    $('vaneWeightTotalGrains').value = Number.isFinite(merged.vaneWeightTotalGrains)
+      ? merged.vaneWeightTotalGrains
+      : '';
+  }
   selectFields.forEach(id => {
     if (!$(id)) return;
     const value = merged[id] !== undefined && merged[id] !== null
@@ -129,14 +133,13 @@ function applyParamsToForm(params) {
 function updateConditionalFields() {
   const params = getFormValues();
   const advanced = params.uiMode === 'advanced';
-  const compound = normalizeBowType(params.bowType) === 'compound';
   const componentsMode = params.massMode === 'components';
 
   document.querySelectorAll('.advanced-field').forEach(el => el.classList.toggle('advanced-hidden', !advanced));
   document.querySelectorAll('.advanced-tab').forEach(el => el.classList.toggle('advanced-hidden', !advanced));
-  document.querySelectorAll('.compound-only').forEach(el => el.classList.toggle('advanced-hidden', !(advanced && compound)));
   document.querySelectorAll('.component-only').forEach(el => el.classList.toggle('advanced-hidden', !(advanced && componentsMode)));
   document.querySelectorAll('.mass-total-note').forEach(el => el.classList.toggle('advanced-hidden', !(advanced && !componentsMode)));
+  if ($('poidsGr')) $('poidsGr').disabled = componentsMode;
 
   if (!advanced && ['tuningChart', 'aoaChart'].includes(appState.activeTab)) {
     appState.activeTab = 'trajectory2D';
@@ -145,25 +148,19 @@ function updateConditionalFields() {
   resizeCharts();
 }
 
-function updateMode() {
-  updateConditionalFields();
-}
-
 function updateDerivedPanels() {
   const params = getFormValues();
   const arrow = buildArrow(params);
   const launch = resolveLaunch(params);
-  const { tuning } = updateSpineRecommendation(params, arrow);
+  updateSpineRecommendation(params, arrow);
   updateEnergyDisplay(arrow, launch);
-  renderLaunchPanel(launch);
 }
 
 function updateEnergyDisplay(arrow = buildArrow(getFormValues()), launch = resolveLaunch(getFormValues())) {
   const energy = 0.5 * arrow.totalMassKg * launch.speedMps * launch.speedMps;
-  $('energyInit').textContent = `${formatNumber(energy, 1)} J (${formatNumber(launch.fps, 0)} fps)`;
-  if (getFormValues().massMode === 'components') {
-    $('poidsGr').value = formatNumber(arrow.totalMassGr, 1);
-  }
+  const momentum = arrow.totalMassKg * launch.speedMps;
+  $('energyInit').textContent = `${formatNumber(energy, 1)} J`;
+  $('momentumInit').textContent = `${formatNumber(momentum, 3)} kg·m/s`;
 }
 
 function updateSpineRecommendation(params = getFormValues(), arrow = buildArrow(params)) {
@@ -183,11 +180,19 @@ function updateSpineRecommendation(params = getFormValues(), arrow = buildArrow(
 function renderArrowBuilderPanel(arrow, params, recommendation, comparison) {
   const spineSummary = buildArrowSpineSummary(params, recommendation, comparison);
   const effectiveDrawWeight = resolveEffectiveDrawWeight(params);
+  const launch = resolveLaunch(params);
+  const energyInitJ = 0.5 * arrow.totalMassKg * launch.speedMps * launch.speedMps;
+  const momentumInit = arrow.totalMassKg * launch.speedMps;
 
   $('arrowBuilderPanel').innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-      <div>Masse: <b>${formatNumber(arrow.totalMassGr, 1)} g</b> / ${formatNumber(arrow.totalMassGrains, 0)} gr</div>
-      <div>FOC: <b>${Number.isFinite(arrow.focPercent) ? `${formatNumber(arrow.focPercent, 1)}%` : 'donn&eacute;e non disponible'}</b></div>
+      <div>Masse totale: <b>${formatNumber(arrow.totalMassGrains, 0)} gr</b> / ${formatNumber(arrow.totalMassGr, 1)} g</div>
+      <div>Longueur: <b>${formatNumber(params.arrowLengthIn, 1)} in</b></div>
+      <div>Diam&egrave;tre: <b>${formatNumber(params.diameter * 1000, 1)} mm</b></div>
+      <div>FOC: <b>${formatFocSummary(arrow)}</b></div>
+      <div>Point weight total: <b>${formatNumber(arrow.pointWeightTotalGrains, 0)} gr</b></div>
+      <div>&Eacute;nergie initiale: <b>${formatNumber(energyInitJ, 1)} J</b></div>
+      <div>Momentum initial: <b>${formatNumber(momentumInit, 3)} kg&middot;m/s</b></div>
       <div>Spine saisi: <b>${params.spineStatic || '&mdash;'}</b> &mdash; nombre bas = plus raide.</div>
       <div>Puissance utilis&eacute;e : <b>${formatNumber(effectiveDrawWeight.effectiveDrawWeightLbs, 1)} lbs</b></div>
       <div>Surface frontale: <b>${(arrow.frontalAreaM2 * 1e6).toFixed(1)} mm&sup2;</b></div>
@@ -199,6 +204,23 @@ function renderArrowBuilderPanel(arrow, params, recommendation, comparison) {
     ${params.massMode === 'total' ? '<div class="mt-2 text-gray-400">Mode masse totale: GPI/composants ne pilotent pas la masse.</div>' : ''}
     ${arrow.warnings.length ? `<ul class="mt-2 text-yellow-300 list-disc pl-5">${arrow.warnings.map(w => `<li>${w}</li>`).join('')}</ul>` : ''}
   `;
+}
+
+function formatFocSummary(arrow) {
+  if (!Number.isFinite(arrow.focPercent)) return 'non disponible';
+  const sourceLabel = arrow.focSource === 'measured'
+    ? 'mesur&eacute;'
+    : arrow.focSource === 'estimated'
+      ? 'estim&eacute;'
+      : 'non disponible';
+  return `${formatNumber(arrow.focPercent, 1)}% (${sourceLabel})`;
+}
+
+function readOptionalNumber(id) {
+  const el = $(id);
+  if (!el || el.value.trim() === '') return null;
+  const value = Number(el.value);
+  return Number.isFinite(value) ? value : null;
 }
 
 function buildArrowSpineSummary(params, recommendation, comparison) {
@@ -265,13 +287,6 @@ function buildManufacturerSpineSummary(params, recommendation, comparison) {
 }
 
 
-function renderLaunchPanel(launch) {
-  $('calibrationPanel').innerHTML = `
-    <div>Vitesse utilisée: <b>${formatNumber(launch.fps, 0)} fps</b> via ${launch.source}.</div>
-    <div class="text-gray-400 mt-1">${launch.notes[0]}</div>
-  `;
-}
-
 function renderDiagnosticsPanel(arrow, tuning) {
   $('diagnosticsPanel').innerHTML = `
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
@@ -308,7 +323,7 @@ function updateStatsPanel(stats = {}) {
 function curvesForDisplay() {
   const curves = appState.lastResult ? [appState.lastResult] : [];
   appState.savedCurves.forEach(curve => {
-    if (curve !== appState.lastResult) curves.push(curve);
+    if (!appState.lastResult || !isSameSetup(curve, appState.lastResult)) curves.push(curve);
   });
   return curves;
 }
@@ -435,14 +450,18 @@ function runSim() {
 }
 
 const scheduleRecalc = debounce(() => {
-  updateMode();
   updateConditionalFields();
   updateDerivedPanels();
   runSim();
 }, 200);
 
 function shareCurrentConfig() {
-  const hash = encodeShare(getFormValues());
+  const hash = encodeShare({
+    currentParams: getFormValues(),
+    currentCurve: appState.lastResult,
+    savedCurves: appState.savedCurves,
+    activeTab: appState.activeTab
+  });
   const url = `${window.location.origin}${window.location.pathname}#${hash}`;
   navigator.clipboard.writeText(url).then(() => {
     alert('Lien de simulation copié.');
@@ -451,11 +470,40 @@ function shareCurrentConfig() {
 
 function loadConfigFromUrl() {
   if (!window.location.hash) return false;
-  const params = decodeShare(window.location.hash);
-  if (!params) return false;
-  applyParamsToForm(params);
-  runSim();
+  const shared = decodeShare(window.location.hash);
+  if (!shared?.currentParams) return false;
+
+  applyParamsToForm(shared.currentParams);
+
+  if (Array.isArray(shared.savedCurves)) {
+    appState.savedCurves = shared.savedCurves.filter(isRenderableCurve);
+    saveSetups(appState.savedCurves);
+    updateSavedCurves();
+  }
+
+  if (isRenderableCurve(shared.currentCurve)) {
+    appState.lastResult = appState.savedCurves.find(curve => isSameSetup(curve, shared.currentCurve))
+      || shared.currentCurve;
+  } else if (!appState.lastResult && appState.savedCurves.length) {
+    appState.lastResult = appState.savedCurves[appState.savedCurves.length - 1];
+  }
+
+  if (shared.activeTab) appState.activeTab = shared.activeTab;
+  updateConditionalFields();
+
+  if (appState.lastResult && isSameSetup(appState.lastResult, { params: getFormValues() })) {
+    updateStatsPanel(appState.lastResult.stats);
+    renderSightTable(appState.lastResult);
+    renderAllCharts(curvesForDisplay());
+    showTab(appState.activeTab);
+  } else {
+    runSim();
+  }
   return true;
+}
+
+function isRenderableCurve(curve) {
+  return Boolean(curve?.params && Array.isArray(curve.curveData) && curve.curveData.length);
 }
 
 function bindEvents() {
@@ -470,12 +518,14 @@ function bindEvents() {
   });
 
   $('uiMode').addEventListener('change', handleUiModeChange);
+  $('bowType').addEventListener('change', handleConditionalFieldChange);
+  $('massMode').addEventListener('change', handleConditionalFieldChange);
 
   $('presetSelect').onchange = () => {
     const preset = PRESETS[$('presetSelect').value];
     if (preset) {
       applyParamsToForm(preset.values);
-      updateSpineRecommendation();
+      updateConditionalFields();
       scheduleRecalc();
     }
   };
@@ -523,9 +573,12 @@ function handleUiModeChange() {
   resizeCharts();
 }
 
+function handleConditionalFieldChange() {
+  updateConditionalFields();
+}
+
 function handleImmediateSpineInput() {
   updateSpineRecommendation();
-  runSim();
 }
 
 function bootstrap() {
@@ -542,7 +595,6 @@ function bootstrap() {
     }
     renderAllCharts(curvesForDisplay());
   }
-  updateMode();
   updateConditionalFields();
   updateSpineRecommendation();
   updateDerivedPanels();
@@ -550,3 +602,4 @@ function bootstrap() {
 }
 
 bootstrap();
+

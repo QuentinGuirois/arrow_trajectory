@@ -1,13 +1,13 @@
 // share-schema.js
 // Schéma versionné pour URL de partage et compatibilité avec les anciens hashes key=value.
 
-export const SHARE_SCHEMA_VERSION = 2;
+export const SHARE_SCHEMA_VERSION = 3;
 
-export function encodeShare(params) {
+export function encodeShare(session) {
   const payload = {
     v: SHARE_SCHEMA_VERSION,
-    type: 'archery-setup',
-    params
+    type: 'archery-session',
+    session: normalizeSession(session)
   };
   const json = JSON.stringify(payload);
   return `v${SHARE_SCHEMA_VERSION}:${btoa(unescape(encodeURIComponent(json)))}`;
@@ -20,9 +20,45 @@ export function decodeShare(hash) {
     const encoded = raw.slice(3);
     const json = decodeURIComponent(escape(atob(encoded)));
     const payload = JSON.parse(json);
-    return payload.params || null;
+    return normalizeSession(payload.session);
   }
-  return decodeLegacy(raw);
+  if (raw.startsWith('v2:')) {
+    const encoded = raw.slice(3);
+    const json = decodeURIComponent(escape(atob(encoded)));
+    const payload = JSON.parse(json);
+    return {
+      currentParams: payload.params || null
+    };
+  }
+  return {
+    currentParams: decodeLegacy(raw)
+  };
+}
+
+function normalizeSession(session = {}) {
+  if (
+    session &&
+    typeof session === 'object' &&
+    (
+      Object.hasOwn(session, 'currentParams') ||
+      Object.hasOwn(session, 'savedCurves') ||
+      Object.hasOwn(session, 'currentCurve') ||
+      Object.hasOwn(session, 'activeTab')
+    )
+  ) {
+    return {
+      currentParams: session.currentParams || null,
+      savedCurves: Array.isArray(session.savedCurves) ? session.savedCurves : [],
+      currentCurve: session.currentCurve || null,
+      activeTab: session.activeTab || null
+    };
+  }
+  return {
+    currentParams: session || null,
+    savedCurves: [],
+    currentCurve: null,
+    activeTab: null
+  };
 }
 
 function decodeLegacy(raw) {

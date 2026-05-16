@@ -20,12 +20,10 @@ export function computeDynamicTuningInputs(params = {}, spineRecommendation = {}
   );
   const frontMassGrains = finiteOr(params.pointWeightGrains, 100) + finiteOr(params.insertWeightGrains, 0);
   const totalMassGrains = resolveTotalMassGrains(params, frontMassGrains);
-  const focPercent = Number.isFinite(params.focPercent)
-    ? params.focPercent
-    : estimateFocPercent(params, frontMassGrains);
+  const focPercent = Number.isFinite(params.focPercent) ? params.focPercent : null;
   const massInertiaFactor = normalizeAround(totalMassGrains, 386, 260);
   const frontMassFactor = normalizeAround(frontMassGrains, 112, 120);
-  const focFactor = normalizeAround(focPercent, 11, 12);
+  const focFactor = Number.isFinite(focPercent) ? normalizeAround(focPercent, 11, 12) : 0;
   const arrowLengthFactor = normalizeAround(finiteOr(params.arrowLengthIn, 29), 29, 6);
   const effectiveDrawWeightFactor = normalizeAround(finiteOr(effectiveDrawWeight, params.drawWeightLbs), 35, 40);
   const staticSpineFactor = normalizeAround(finiteOr(params.spineStatic, 600), 600, 700);
@@ -268,14 +266,6 @@ function mismatchDirectionalBoost(status, direction) {
   if (status === 'too-soft' && direction === 'soft') return 0.42;
   if (status === 'too-stiff' && direction === 'soft') return 0.18;
   return 0.24;
-}
-
-function estimateFocPercent(params, frontMassGrains) {
-  if (Number.isFinite(params.balancePointIn) && params.balancePointIn > 0 && Number.isFinite(params.arrowLengthIn)) {
-    return ((params.balancePointIn - params.arrowLengthIn / 2) / params.arrowLengthIn) * 100;
-  }
-  const totalMassGrains = resolveTotalMassGrains(params, frontMassGrains);
-  return clamp((frontMassGrains / Math.max(totalMassGrains, 1)) * 38, 4, 24);
 }
 
 function resolveTotalMassGrains(params, frontMassGrains) {

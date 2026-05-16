@@ -27,6 +27,7 @@ export const DEFAULT_PARAMS = {
   pointWeightGrains: 100,
   insertWeightGrains: 12,
   nockWeightGrains: 10,
+  vaneWeightTotalGrains: null,
   vaneCount: 3,
   vaneLengthIn: 1.75,
   vaneProfile: 'medium',
@@ -38,8 +39,6 @@ export const DEFAULT_PARAMS = {
   drawWeightLbs: 35,
   drawLengthIn: 28,
   drawWeightBasis: 'at-28',
-  letOffPercent: 0,
-  camAggressiveness: 0.4,
 
   pressureHpa: 1020,
   temperatureCelsius: 20,
@@ -139,9 +138,7 @@ export const PRESETS = {
       fletchingOrientation: 'helical',
       fletchingAngleDeg: 2,
       drawWeightLbs: 65,
-      drawLengthIn: 29,
-      letOffPercent: 80,
-      camAggressiveness: 0.75
+      drawLengthIn: 29
     }
   },
   compoundTarget: {
@@ -160,9 +157,7 @@ export const PRESETS = {
       fletchingOrientation: 'offset',
       fletchingAngleDeg: 1.5,
       drawWeightLbs: 55,
-      drawLengthIn: 28.5,
-      letOffPercent: 70,
-      camAggressiveness: 0.55
+      drawLengthIn: 28.5
     }
   }
 };
