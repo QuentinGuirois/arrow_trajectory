@@ -15,16 +15,16 @@ export function debounce(fn, wait = 300) {
   };
 }
 
-export function interpolatePointAtDistance(points, distance) {
+export function interpolatePointAtDistance(points, distanceM) {
   if (!points?.length) return null;
-  if (distance <= points[0].x) return { ...points[0], distance };
+  if (distanceM <= points[0].x) return { ...points[0], distance: distanceM };
   for (let i = 1; i < points.length; i++) {
     const a = points[i - 1];
     const b = points[i];
-    if (b.x >= distance) {
-      const t = (distance - a.x) / Math.max(0.000001, b.x - a.x);
+    if (b.x >= distanceM) {
+      const t = (distanceM - a.x) / Math.max(0.000001, b.x - a.x);
       const out = {
-        distance,
+        distance: distanceM,
         ...(b.modelVersion ? { modelVersion: b.modelVersion } : {})
       };
       Object.keys(b).forEach(key => {

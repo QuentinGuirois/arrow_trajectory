@@ -76,7 +76,9 @@ export function renderAllCharts(curves) {
     if (params.dispersionEnabled) traces3d.push(traceDispersion3d(curveData, color, `${label} cône`));
     drift.push(traceDistance(curveData, color, label, p => pointDriftM(p) * 100, 'Dérive', 'cm'));
     tuning.push(...traceTuning(curveData, color, label));
-    aoa.push(traceDistance(curveData, color, label, p => p.aoaDeg, 'AoA proxy', '°'));
+    if (hasNumericField(curveData, 'aoaDeg')) {
+      aoa.push(traceDistance(curveData, color, label, p => p.aoaDeg, 'AoA proxy', '°'));
+    }
   });
 
   const common = {
@@ -104,8 +106,11 @@ export function renderAllCharts(curves) {
       xaxis: axis3d('Distance (m)'),
       yaxis: axis3d('Dérive y (m)'),
       zaxis: axis3d('Hauteur (m)'),
-      aspectmode: 'manual',
-      aspectratio: { x: 3.8, y: 0.9, z: 1.15 },
+      aspectmode: 'data',
+      camera: {
+        eye: { x: 1.7, y: 1.45, z: 0.85 },
+        projection: { type: 'orthographic' }
+      },
       bgcolor: 'rgba(0,0,0,0)'
     }
   }, config);
@@ -120,7 +125,18 @@ function axis(title) {
 }
 
 function axis3d(title) {
-  return { title, color: '#fff', gridcolor: 'rgba(255,255,255,0.12)', zerolinecolor: 'rgba(255,255,255,0.25)' };
+  return {
+    title,
+    color: '#fff',
+    showbackground: true,
+    backgroundcolor: 'rgba(255,255,255,0.03)',
+    showgrid: true,
+    gridcolor: 'rgba(255,255,255,0.12)',
+    zeroline: true,
+    zerolinecolor: 'rgba(255,255,255,0.25)',
+    showline: true,
+    linecolor: 'rgba(255,255,255,0.35)'
+  };
 }
 
 function trace2d(points, color, label) {
@@ -131,7 +147,7 @@ function trace2d(points, color, label) {
     type: 'scattergl',
     name: label,
     line: { width: 1.8, color },
-    text: points.map(p => `<b>${label}</b><br>Distance: ${p.x.toFixed(1)} m<br>Hauteur: ${pointHeightM(p).toFixed(2)} m<br>Dérive: ${(pointDriftM(p) * 100).toFixed(1)} cm<br>Énergie: ${pointEnergyJ(p).toFixed(1)} J`),
+    text: points.map(p => `<b>${label}</b><br>Distance: ${formatHoverNumber(p.x, 1)} m<br>Hauteur: ${formatHoverNumber(pointHeightM(p), 2)} m<br>Vitesse: ${formatHoverNumber(p.fps, 1)} fps<br>Énergie: ${formatHoverNumber(pointEnergyJ(p), 1)} J<br>Temps: ${formatHoverNumber(p.time, 2)} s`),
     hoverinfo: 'text'
   };
 }
@@ -145,7 +161,7 @@ function trace3d(points, color, label) {
     type: 'scatter3d',
     name: label,
     line: { width: 4, color },
-    text: points.map(p => `<b>${label}</b><br>Distance: ${p.x.toFixed(1)} m<br>Hauteur: ${pointHeightM(p).toFixed(2)} m<br>Dérive: ${(pointDriftM(p) * 100).toFixed(1)} cm<br>Énergie: ${pointEnergyJ(p).toFixed(1)} J`),
+    text: points.map(p => `<b>${label}</b><br>Distance: ${formatHoverNumber(p.x, 1)} m<br>Hauteur: ${formatHoverNumber(pointHeightM(p), 2)} m<br>Dérive: ${formatHoverNumber(pointDriftM(p) * 100, 1)} cm<br>Vitesse: ${formatHoverNumber(p.fps, 1)} fps<br>Énergie: ${formatHoverNumber(pointEnergyJ(p), 1)} J`),
     hoverinfo: 'text'
   };
 }
@@ -195,7 +211,7 @@ function traceDistance(points, color, label, valueForPoint, title, unit) {
     type: 'scattergl',
     name: label,
     line: { width: 2, color },
-    text: sampled.map(p => `<b>${label}</b><br>Distance: ${p.distance} m<br>${title}: ${valueForPoint(p).toFixed(2)} ${unit}`),
+    text: sampled.map(p => `<b>${label}</b><br>Distance: ${p.distance} m<br>${title}: ${formatHoverNumber(valueForPoint(p), 2)} ${unit}`),
     hoverinfo: 'text'
   };
 }
@@ -240,4 +256,12 @@ function sampleAtDistances(points) {
   return distances
     .map(distance => interpolatePointAtDistance(points, distance))
     .filter(Boolean);
+}
+
+function hasNumericField(points, key) {
+  return points.some(point => Number.isFinite(point?.[key]));
+}
+
+function formatHoverNumber(value, digits) {
+  return Number.isFinite(value) ? value.toFixed(digits) : '—';
 }
