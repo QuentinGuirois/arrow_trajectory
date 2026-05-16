@@ -1,4 +1,4 @@
-// plotly-charts.js
+﻿// plotly-charts.js
 // Construction et rendu des graphes Plotly: 2D, énergie, temps, holdover, 3D, dérive, tuning et AoA.
 
 import { buildSightMarks } from './calibration.js';
@@ -10,10 +10,19 @@ import {
 } from './util.js';
 
 const Plotly = window.Plotly;
-
 const chartIds = ['trajectory2D', 'energyChart', 'timeChart', 'holdoverChart', 'trajectory3D', 'driftChart', 'tuningChart', 'aoaChart'];
+const mobileLayoutQuery = window.matchMedia('(max-width: 767px)');
+const DEFAULT_3D_CAMERA = {
+  eye: { x: 1.7, y: 1.45, z: 0.85 },
+  projection: { type: 'orthographic' }
+};
+let activeTab = 'trajectory2D';
+let chartState = null;
+let renderedChartIds = new Set();
+let legendVisible = true;
 
 export function showTab(tab) {
+  activeTab = tab;
   chartIds.forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = id === tab ? '' : 'none';
@@ -30,11 +39,13 @@ export function showTab(tab) {
     aoaChart: 'tabAoa'
   };
   document.getElementById(map[tab])?.classList.add('tab-active');
+  document.getElementById('chart')?.classList.toggle('is-3d-active', tab === 'trajectory3D');
+  renderActiveChart();
   resizeCharts();
 }
 
 export function resizeCharts() {
-  chartIds.forEach(id => {
+  renderedChartIds.forEach(id => {
     const el = document.getElementById(id);
     if (el?.data) {
       const resize = Plotly.Plots.resize(el);
@@ -48,6 +59,8 @@ export function purgeCharts() {
     const el = document.getElementById(id);
     if (el) Plotly.purge(id);
   });
+  renderedChartIds = new Set();
+  chartState = null;
 }
 
 export function renderAllCharts(curves) {
@@ -81,43 +94,169 @@ export function renderAllCharts(curves) {
     }
   });
 
-  const common = {
-    margin: { l: 44, r: 20, b: 60, t: 30 },
-    height: window.innerWidth >= 1280 ? 560 : 420,
+  const common = buildCommonLayout();
+  chartState = {
+    trajectory2D: {
+      traces: traces2d,
+      layout: {
+        ...common,
+        dragmode: isMobileLayout() ? 'pan' : 'zoom',
+        xaxis: axis('Distance (m)'),
+        yaxis: { ...axis('Hauteur (m)'), scaleanchor: 'x', scaleratio: 1 }
+      }
+    },
+    energyChart: {
+      traces: energy,
+      layout: {
+        ...common,
+        dragmode: isMobileLayout() ? 'pan' : 'zoom',
+        xaxis: axis('Distance (m)'),
+        yaxis: axis('Énergie (J)')
+      }
+    },
+    timeChart: {
+      traces: time,
+      layout: {
+        ...common,
+        dragmode: isMobileLayout() ? 'pan' : 'zoom',
+        xaxis: axis('Distance (m)'),
+        yaxis: axis('Temps (s)')
+      }
+    },
+    holdoverChart: {
+      traces: hold,
+      layout: {
+        ...common,
+        dragmode: isMobileLayout() ? 'pan' : 'zoom',
+        xaxis: axis('Distance (m)'),
+        yaxis: axis('Compensation (cm)')
+      }
+    },
+    trajectory3D: {
+      traces: traces3d,
+      layout: {
+        ...common,
+        scene: {
+          xaxis: axis3d('Distance (m)'),
+          yaxis: axis3d('Dérive y (m)'),
+          zaxis: axis3d('Hauteur (m)'),
+          aspectmode: 'data',
+          camera: DEFAULT_3D_CAMERA,
+          bgcolor: 'rgba(0,0,0,0)'
+        }
+      }
+    },
+    driftChart: {
+      traces: drift,
+      layout: {
+        ...common,
+        dragmode: isMobileLayout() ? 'pan' : 'zoom',
+        xaxis: axis('Distance (m)'),
+        yaxis: axis('Dérive latérale (cm)')
+      }
+    },
+    tuningChart: {
+      traces: tuning,
+      layout: {
+        ...common,
+        dragmode: isMobileLayout() ? 'pan' : 'zoom',
+        xaxis: axis('Distance (m)'),
+        yaxis: axis('Oscillation (cm)')
+      }
+    },
+    aoaChart: {
+      traces: aoa,
+      layout: {
+        ...common,
+        dragmode: isMobileLayout() ? 'pan' : 'zoom',
+        xaxis: axis('Distance (m)'),
+        yaxis: axis('Angle d’attaque proxy diagnostic (°)')
+      }
+    }
+  };
+
+  if (shouldRenderAllCharts()) {
+    chartIds.forEach(renderChart);
+  } else if (shouldRenderActiveChart()) {
+    renderActiveChart();
+  }
+  resizeCharts();
+}
+
+export function renderActiveChart() {
+  if (!chartState || !shouldRenderActiveChart()) return;
+  renderChart(activeTab);
+}
+
+export function setLegendVisibility(visible) {
+  legendVisible = visible;
+  if (!chartState) return;
+  Object.values(chartState).forEach(({ layout }) => {
+    layout.showlegend = visible;
+  });
+  if (shouldRenderAllCharts()) {
+    chartIds.forEach(renderChart);
+  } else if (shouldRenderActiveChart()) {
+    renderActiveChart();
+  }
+}
+
+export function resetThreeDView() {
+  const el = document.getElementById('trajectory3D');
+  if (!el?.data) return;
+  Plotly.relayout(el, { 'scene.camera': DEFAULT_3D_CAMERA });
+}
+
+function isMobileLayout() {
+  return mobileLayoutQuery.matches;
+}
+
+function shouldRenderAllCharts() {
+  return !isMobileLayout();
+}
+
+function shouldRenderActiveChart() {
+  return !isMobileLayout() || document.body.dataset.mobilePanel === 'graphs';
+}
+
+function renderChart(id) {
+  const chart = chartState?.[id];
+  if (!chart) return;
+  Plotly.react(id, chart.traces, chart.layout, chartConfig());
+  renderedChartIds.add(id);
+}
+
+function buildCommonLayout() {
+  const mobile = isMobileLayout();
+  return {
+    margin: mobile ? { l: 42, r: 16, b: 58, t: 20 } : { l: 44, r: 20, b: 60, t: 30 },
+    height: chartHeight(),
     paper_bgcolor: 'rgba(0,0,0,0)',
     plot_bgcolor: 'rgba(0,0,0,0)',
-    legend: { orientation: 'h', xanchor: 'center', x: 0.5, y: -0.2, font: { color: 'white', size: 10 } },
+    legend: {
+      orientation: 'h',
+      xanchor: 'center',
+      x: 0.5,
+      y: mobile ? -0.23 : -0.2,
+      font: { color: 'white', size: mobile ? 9 : 10 }
+    },
     hovermode: 'closest',
-    showlegend: true
+    showlegend: legendVisible
   };
-  const config = { displayModeBar: false, responsive: true, scrollZoom: false, displaylogo: false };
+}
 
-  Plotly.react('trajectory2D', traces2d, {
-    ...common,
-    xaxis: axis('Distance (m)'),
-    yaxis: { ...axis('Hauteur (m)'), scaleanchor: 'x', scaleratio: 1 }
-  }, config);
-  Plotly.react('energyChart', energy, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Énergie (J)') }, config);
-  Plotly.react('timeChart', time, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Temps (s)') }, config);
-  Plotly.react('holdoverChart', hold, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Compensation (cm)') }, config);
-  Plotly.react('trajectory3D', traces3d, {
-    ...common,
-    scene: {
-      xaxis: axis3d('Distance (m)'),
-      yaxis: axis3d('Dérive y (m)'),
-      zaxis: axis3d('Hauteur (m)'),
-      aspectmode: 'data',
-      camera: {
-        eye: { x: 1.7, y: 1.45, z: 0.85 },
-        projection: { type: 'orthographic' }
-      },
-      bgcolor: 'rgba(0,0,0,0)'
-    }
-  }, config);
-  Plotly.react('driftChart', drift, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Dérive latérale (cm)') }, config);
-  Plotly.react('tuningChart', tuning, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Oscillation (cm)') }, config);
-  Plotly.react('aoaChart', aoa, { ...common, xaxis: axis('Distance (m)'), yaxis: axis('Angle d’attaque proxy diagnostic (°)') }, config);
-  resizeCharts();
+function chartConfig() {
+  return {
+    displayModeBar: false,
+    responsive: true,
+    scrollZoom: false,
+    displaylogo: false
+  };
+}
+
+function chartHeight() {
+  if (isMobileLayout()) return Math.max(420, Math.min(Math.round(window.innerHeight * 0.7), 560));
+  return window.innerWidth >= 1280 ? 560 : 420;
 }
 
 function axis(title) {
@@ -140,34 +279,36 @@ function axis3d(title) {
 }
 
 function trace2d(points, color, label) {
+  const sampled = sampleForDisplay(points);
   return {
-    x: points.map(p => p.x),
-    y: points.map(pointHeightM),
+    x: sampled.map(p => p.x),
+    y: sampled.map(pointHeightM),
     mode: 'lines',
     type: 'scattergl',
     name: label,
     line: { width: 1.8, color },
-    text: points.map(p => `<b>${label}</b><br>Distance: ${formatHoverNumber(p.x, 1)} m<br>Hauteur: ${formatHoverNumber(pointHeightM(p), 2)} m<br>Vitesse: ${formatHoverNumber(p.fps, 1)} fps<br>Énergie: ${formatHoverNumber(pointEnergyJ(p), 1)} J<br>Temps: ${formatHoverNumber(p.time, 2)} s`),
+    text: sampled.map(p => `<b>${label}</b><br>Distance: ${formatHoverNumber(p.x, 1)} m<br>Hauteur: ${formatHoverNumber(pointHeightM(p), 2)} m<br>Vitesse: ${formatHoverNumber(p.fps, 1)} fps<br>Énergie: ${formatHoverNumber(pointEnergyJ(p), 1)} J<br>Temps: ${formatHoverNumber(p.time, 2)} s`),
     hoverinfo: 'text'
   };
 }
 
 function trace3d(points, color, label) {
+  const sampled = sampleForDisplay(points);
   return {
-    x: points.map(p => p.x),
-    y: points.map(pointDriftM),
-    z: points.map(pointHeightM),
+    x: sampled.map(p => p.x),
+    y: sampled.map(pointDriftM),
+    z: sampled.map(pointHeightM),
     mode: 'lines',
     type: 'scatter3d',
     name: label,
     line: { width: 4, color },
-    text: points.map(p => `<b>${label}</b><br>Distance: ${formatHoverNumber(p.x, 1)} m<br>Hauteur: ${formatHoverNumber(pointHeightM(p), 2)} m<br>Dérive: ${formatHoverNumber(pointDriftM(p) * 100, 1)} cm<br>Vitesse: ${formatHoverNumber(p.fps, 1)} fps<br>Énergie: ${formatHoverNumber(pointEnergyJ(p), 1)} J`),
+    text: sampled.map(p => `<b>${label}</b><br>Distance: ${formatHoverNumber(p.x, 1)} m<br>Hauteur: ${formatHoverNumber(pointHeightM(p), 2)} m<br>Dérive: ${formatHoverNumber(pointDriftM(p) * 100, 1)} cm<br>Vitesse: ${formatHoverNumber(p.fps, 1)} fps<br>Énergie: ${formatHoverNumber(pointEnergyJ(p), 1)} J`),
     hoverinfo: 'text'
   };
 }
 
 function traceDispersion2d(points, color, label) {
-  const sampled = points.filter((_, i) => i % Math.max(1, Math.floor(points.length / 80)) === 0);
+  const sampled = sampleForDisplay(points, 80);
   const upper = sampled.map(p => pointHeightM(p) + p.dispersionRadiusCm / 100);
   const lower = sampled.map(p => pointHeightM(p) - p.dispersionRadiusCm / 100).reverse();
   return {
@@ -232,24 +373,34 @@ function traceHoldover(points, params, color, label) {
 }
 
 function traceTuning(points, color, label) {
+  const sampled = sampleForDisplay(points);
   return [
     {
-      x: points.map(p => p.x),
-      y: points.map(p => p.porpoiseCm),
+      x: sampled.map(p => p.x),
+      y: sampled.map(p => p.porpoiseCm),
       mode: 'lines',
       type: 'scattergl',
       name: `${label} oscillation verticale`,
       line: { width: 1.5, color }
     },
     {
-      x: points.map(p => p.x),
-      y: points.map(p => p.fishtailCm),
+      x: sampled.map(p => p.x),
+      y: sampled.map(p => p.fishtailCm),
       mode: 'lines',
       type: 'scattergl',
       name: `${label} oscillation latérale`,
       line: { width: 1.5, color, dash: 'dot' }
     }
   ];
+}
+
+function sampleForDisplay(points, maxPoints = 320) {
+  if (!isMobileLayout() || points.length <= maxPoints) return points;
+  const step = Math.ceil(points.length / maxPoints);
+  const sampled = points.filter((_, index) => index % step === 0);
+  const last = points[points.length - 1];
+  if (sampled[sampled.length - 1] !== last) sampled.push(last);
+  return sampled;
 }
 
 function sampleAtDistances(points) {

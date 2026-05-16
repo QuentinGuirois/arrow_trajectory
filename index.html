@@ -4,6 +4,12 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Simulateur Trajectoire Flèche | Archery Ballistics</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    html, body { margin: 0; background: #0f172a; }
+  </style>
   <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -22,25 +28,40 @@
       }
     }
   </script>
+  <link rel="manifest" href="manifest.webmanifest">
   <link rel="stylesheet" href="style-extra.css">
 </head>
-<body>
-  <div class="min-h-screen relative">
+<body class="app-loading">
+  <div class="intro-loader" id="introLoader" aria-hidden="true">
+    <div class="intro-loader__grid"></div>
+    <div class="intro-loader__halo intro-loader__halo--one"></div>
+    <div class="intro-loader__halo intro-loader__halo--two"></div>
+    <div class="intro-loader__content">
+      <h1 class="intro-loader__title neon-text">ARCHERY BALLISTICS</h1>
+      <div class="intro-loader__bar" aria-hidden="true">
+        <span></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="min-h-screen relative app-shell">
     <div class="absolute top-20 right-10 w-64 h-64 rounded-full bg-purple-500 opacity-10 blur-3xl"></div>
     <div class="absolute bottom-10 left-10 w-72 h-72 rounded-full bg-cyan-500 opacity-10 blur-3xl"></div>
-    <div class="container mx-auto px-4 py-8 max-w-[1800px]">
-      <header class="text-center mb-8">
-        <div class="flex items-center justify-center mb-4">
-          <div class="w-12 h-12 rounded-full bg-cyan-500 flex items-center justify-center mr-4">
-            <i class="fas fa-bullseye text-white text-xl"></i>
-          </div>
-          <h1 class="text-4xl md:text-5xl font-bold neon-text">ARCHERY BALLISTICS</h1>
+    <div class="container mx-auto px-4 lg:px-6 py-4 md:py-5 max-w-[1920px]">
+      <header class="mobile-appbar">
+        <div>
+          <div class="mobile-appbar__title">Archery Ballistics</div>
+          <div class="mobile-appbar__status">Recalcul dynamique</div>
         </div>
-        <p class="text-lg text-cyan-300 max-w-3xl mx-auto">Simulateur de trajectoire et comparaison de setups. Recalcul automatique à chaque modification.</p>
+        <a href="documentation.html" class="mobile-appbar__link">
+          <i class="fas fa-book"></i>
+          <span>Docs</span>
+        </a>
       </header>
 
-      <div class="grid grid-cols-1 lg:grid-cols-[420px_minmax(0,1fr)] gap-8">
-        <aside>
+      <div class="workspace-grid">
+        <div class="workspace-column workspace-column--left">
+          <section class="workspace-panel workspace-panel--params mobile-panel is-active" data-mobile-panel="params">
           <div class="card-glass p-6 relative overflow-hidden">
             <div class="grid-lines"></div>
             <div class="relative z-10">
@@ -90,7 +111,7 @@
                       </select>
                     </div>
                     <div>
-                      <label class="field-label">Vitesse chrono / initiale (fps)</label>
+                      <label class="field-label">Vitesse chrono (fps)</label>
                       <input type="number" id="fps" value="190" min="80" max="420" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
@@ -296,10 +317,9 @@
                       Mode dispersion expérimental
                     </label>
                   </div>
-                  <div id="diagnosticsPanel" class="derived-panel mt-3"></div>
                 </details>
 
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
+                <div class="desktop-actions grid grid-cols-1 sm:grid-cols-3 gap-3 pt-4">
                   <button type="button" id="saveCurve" class="btn-neon py-3 rounded-lg font-bold"><i class="fas fa-save mr-2"></i>Enregistrer</button>
                   <button type="button" id="shareConfig" class="btn-neon-secondary py-3 rounded-lg font-bold"><i class="fas fa-share-alt mr-2"></i>Partager</button>
                   <button type="button" id="resetCurves" class="btn-neon-secondary py-3 rounded-lg font-bold"><i class="fas fa-trash-alt mr-2"></i>Effacer les setups</button>
@@ -307,8 +327,32 @@
               </form>
             </div>
           </div>
+          </section>
 
-          <div class="card-glass p-6 mt-8 relative overflow-hidden">
+          <section class="workspace-panel workspace-panel--setups mobile-panel" data-mobile-panel="setups">
+          <div class="mobile-panel-heading">
+            <button type="button" class="mobile-return-button" data-mobile-target="params">
+              <i class="fas fa-arrow-left"></i>
+              Paramètres
+            </button>
+          </div>
+
+          <div class="card-glass mobile-actions-card p-6 relative overflow-hidden">
+            <div class="grid-lines"></div>
+            <div class="relative z-10">
+              <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-layer-group mr-3 text-cyan-400"></i>
+                ACTIONS SETUP
+              </h2>
+              <div class="grid grid-cols-1 gap-3">
+                <button type="button" id="mobileSaveCurve" class="btn-neon py-3 rounded-lg font-bold"><i class="fas fa-save mr-2"></i>Enregistrer</button>
+                <button type="button" id="mobileShareConfig" class="btn-neon-secondary py-3 rounded-lg font-bold"><i class="fas fa-share-alt mr-2"></i>Partager</button>
+                <button type="button" id="mobileResetCurves" class="btn-neon-secondary py-3 rounded-lg font-bold"><i class="fas fa-trash-alt mr-2"></i>Effacer les setups</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="card-glass p-6 mt-5 lg:mt-6 relative overflow-hidden">
             <div class="grid-lines"></div>
             <div class="relative z-10">
               <h2 class="text-2xl font-bold mb-4 flex items-center">
@@ -318,9 +362,17 @@
               <div class="space-y-3" id="savedCurves"></div>
             </div>
           </div>
-        </aside>
+          </section>
+        </div>
 
-        <main>
+        <div class="workspace-column workspace-column--right">
+          <section class="workspace-panel workspace-panel--graphs mobile-panel" data-mobile-panel="graphs">
+          <div class="mobile-panel-heading">
+            <button type="button" class="mobile-return-button" data-mobile-target="params">
+              <i class="fas fa-arrow-left"></i>
+              Paramètres
+            </button>
+          </div>
           <div class="card-glass p-6 relative overflow-hidden">
             <div class="grid-lines"></div>
             <div class="trajectory-glow"></div>
@@ -340,6 +392,14 @@
                   <button class="text-gray-400 hover:text-cyan-300 transition advanced-tab" id="tabTuning">Oscillations</button>
                 </div>
               </div>
+              <div class="chart-tools">
+                <button type="button" id="toggleLegend" class="chart-tool-button">
+                  <i class="fas fa-list mr-2"></i>Masquer légende
+                </button>
+                <button type="button" id="reset3dView" class="chart-tool-button">
+                  <i class="fas fa-cube mr-2"></i>Réinitialiser vue 3D
+                </button>
+              </div>
               <div class="chart-container bg-gray-900/50 rounded-xl border border-gray-700 relative" id="chart">
                 <div id="trajectory2D"></div>
                 <div id="energyChart" style="display:none;"></div>
@@ -351,12 +411,10 @@
                 <div id="aoaChart" style="display:none;"></div>
               </div>
               <div id="chartNote" class="text-sm text-gray-400 mt-3">3D = centre de masse de la flèche. La dérive latérale est portée par l’axe y.</div>
-              <div class="grid grid-cols-2 xl:grid-cols-4 gap-4 mt-6" id="statsPanel"></div>
-              <div id="sightTablePanel" class="derived-panel mt-4"></div>
             </div>
           </div>
 
-          <div class="card-glass p-6 mt-8">
+          <div class="card-glass p-6 mt-5 lg:mt-6">
             <h2 class="text-2xl font-bold mb-4 flex items-center">
               <i class="fas fa-lightbulb mr-3 text-yellow-400"></i>
               NOTES MODÈLE
@@ -367,18 +425,94 @@
               <div>Le spine fabricant est une aide de sélection et de réglage ; il ne modifie ni la trajectoire ni la vitesse.</div>
             </div>
           </div>
-        </main>
+          </section>
+
+          <section class="workspace-panel workspace-panel--results mobile-panel" data-mobile-panel="results">
+          <div class="mobile-panel-heading">
+            <button type="button" class="mobile-return-button" data-mobile-target="params">
+              <i class="fas fa-arrow-left"></i>
+              Paramètres
+            </button>
+          </div>
+          <div class="card-glass p-6 relative overflow-hidden">
+            <div class="grid-lines"></div>
+            <div class="relative z-10">
+              <h2 class="text-2xl font-bold mb-4 flex items-center">
+                <i class="fas fa-wave-square mr-3 text-cyan-400"></i>
+                RÉSULTATS & DIAGNOSTICS
+              </h2>
+              <div class="grid grid-cols-2 xl:grid-cols-4 gap-4" id="statsPanel"></div>
+              <div id="diagnosticsPanel" class="derived-panel mt-4"></div>
+              <div id="sightTablePanel" class="derived-panel mt-4"></div>
+            </div>
+          </div>
+          </section>
+        </div>
       </div>
 
-      <footer class="mt-12 text-center text-gray-500 text-sm">
-        <div class="flex flex-wrap justify-center gap-6 mb-4">
-          <a href="#readme" class="hover:text-cyan-400 transition"><i class="fas fa-book mr-2"></i>Documentation</a>
+      <nav class="mobile-bottom-nav" aria-label="Navigation mobile">
+        <button type="button" class="is-active" data-mobile-target="params">
+          <i class="fas fa-sliders-h"></i>
+          <span>Paramètres</span>
+        </button>
+        <button type="button" data-mobile-target="results">
+          <i class="fas fa-chart-column"></i>
+          <span>Résultats</span>
+        </button>
+        <button type="button" data-mobile-target="graphs">
+          <i class="fas fa-chart-line"></i>
+          <span>Graphes</span>
+        </button>
+        <button type="button" data-mobile-target="setups">
+          <i class="fas fa-layer-group"></i>
+          <span>Setups</span>
+        </button>
+      </nav>
+
+      <footer class="desktop-footer mt-7 text-center text-gray-500 text-sm">
+        <div class="flex flex-wrap justify-center gap-6 mb-3">
+          <a href="documentation.html" class="hover:text-cyan-400 transition"><i class="fas fa-book mr-2"></i>Documentation</a>
           <a href="#" class="hover:text-cyan-400 transition"><i class="fas fa-share-alt mr-2"></i>Partager</a>
         </div>
         <p>Archery Ballistics Simulator v3.1 © 2026 | Modèle simplifié pour usage amateur éclairé</p>
       </footer>
     </div>
   </div>
+  <script>
+    (() => {
+      const minVisibleMs = 1100;
+      const maxVisibleMs = 1900;
+      const startedAt = performance.now();
+      let isRevealed = false;
+
+      function revealApp() {
+        if (isRevealed) return;
+        isRevealed = true;
+        document.body.classList.remove('app-loading');
+        document.body.classList.add('is-loaded');
+      }
+
+      function revealAfterMinimum() {
+        const elapsed = performance.now() - startedAt;
+        window.setTimeout(revealApp, Math.max(0, minVisibleMs - elapsed));
+      }
+
+      if (document.readyState === 'complete') {
+        revealAfterMinimum();
+      } else {
+        window.addEventListener('load', revealAfterMinimum, { once: true });
+      }
+
+      window.setTimeout(revealApp, maxVisibleMs);
+    })();
+  </script>
   <script type="module" src="script-archery.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+      });
+    }
+  </script>
 </body>
 </html>

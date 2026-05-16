@@ -29,6 +29,35 @@ Affiche uniquement les fondamentaux :
 
 Toute modification recalcule automatiquement les graphes et les stats après un court debounce.
 
+## Responsive / mobile checklist
+
+### Mobile 390 px
+
+- Aucun débordement horizontal.
+- Navigation basse `Paramètres / Résultats / Graphes / Setups` fonctionnelle.
+- Inputs tactiles de 44 px minimum et police de formulaire à 16 px pour éviter le zoom iOS.
+- Mode simple lisible dès l’ouverture ; sections avancées repliées.
+- Stats et diagnostics lisibles dans le panneau `Résultats`.
+- Un seul graphe visible à la fois, hauteur confortable, interaction 2D tactile et vue 3D manipulable.
+
+### Tablette 768 px
+
+- Empilement confortable sans chevauchement.
+- Graphes suffisamment hauts et larges.
+- Cartes de résultats, notes modèle et setups lisibles sans collision.
+
+### Desktop 1280 px+
+
+- Mise en page large conservée : paramètres à gauche, graphes et résultats à droite.
+- Aucune régression sur les onglets, stats, diagnostics ou sauvegardes.
+
+### PWA
+
+- `manifest.webmanifest` chargé.
+- `service-worker.js` enregistré sans erreur console.
+- Installation possible depuis le navigateur mobile.
+- Les assets locaux sont mis en cache ; Plotly, Tailwind et Font Awesome restent servis par CDN et ne sont donc pas garantis hors-ligne tant qu’ils ne sont pas vendored localement.
+
 ### Mode avancé
 
 Ajoute les paramètres techniques utiles :

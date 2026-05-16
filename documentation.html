@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Documentation | Archery Ballistics</title>
+  <meta name="theme-color" content="#0f172a">
+  <style>
+    html, body { margin: 0; background: #0f172a; }
+  </style>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            'dark-bg': '#0f172a',
+            'card-bg': 'rgba(30, 41, 59, 0.7)',
+            'neon-blue': '#00f7ff',
+            'neon-purple': '#bd00ff',
+            'neon-green': '#00ff9d'
+          }
+        }
+      }
+    }
+  </script>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="stylesheet" href="style-extra.css">
+</head>
+<body class="docs-page">
+  <div class="min-h-screen relative">
+    <div class="absolute top-10 right-8 w-72 h-72 rounded-full bg-purple-500 opacity-10 blur-3xl"></div>
+    <div class="absolute bottom-10 left-8 w-80 h-80 rounded-full bg-cyan-500 opacity-10 blur-3xl"></div>
+
+    <div class="container mx-auto px-4 lg:px-6 py-5 md:py-8 max-w-[1500px]">
+      <header class="docs-hero card-glass relative overflow-hidden">
+        <div class="grid-lines"></div>
+        <div class="relative z-10">
+          <div class="docs-kicker">Documentation technique</div>
+          <div class="docs-hero__content">
+            <div>
+              <h1 class="text-3xl md:text-5xl font-bold neon-text">ARCHERY BALLISTICS</h1>
+              <p class="docs-lead">Le simulateur aide à comparer, comprendre et préparer. Une base de décision, pas une vérité absolue.</p>
+            </div>
+            <a href="index.html" class="btn-neon docs-return">
+              <i class="fas fa-arrow-left mr-2"></i>Retour au simulateur
+            </a>
+          </div>
+          <div class="docs-badges">
+            <span>Trajectoire</span>
+            <span>Spine</span>
+            <span>FOC</span>
+            <span>Stabilité</span>
+            <span>Tuning</span>
+          </div>
+        </div>
+      </header>
+
+      <nav class="docs-mobile-nav" aria-label="Sommaire documentation">
+        <a href="#usage">Usage</a>
+        <a href="#methode">Méthode</a>
+        <a href="#guide">Guide</a>
+        <a href="#cas">Cas d’usage</a>
+        <a href="#limites">Limites</a>
+      </nav>
+
+      <main class="docs-layout">
+        <section class="docs-grid docs-grid--two" id="usage">
+          <article class="card-glass docs-card relative overflow-hidden">
+            <div class="grid-lines"></div>
+            <div class="relative z-10">
+              <h2>À quoi sert l’outil</h2>
+              <p>Archery Ballistics est un simulateur de trajectoire de flèche pensé pour les vendeurs d’arcs, préparateurs, techniciens et archers passionnés.</p>
+              <p>Il aide à lire la balistique, comparer des setups, éclairer le choix spine et interpréter des indicateurs de stabilité avant les essais réels.</p>
+            </div>
+          </article>
+
+          <article class="card-glass docs-card relative overflow-hidden">
+            <div class="grid-lines"></div>
+            <div class="relative z-10">
+              <h2>Ce que l’outil ne fait pas</h2>
+              <ul class="docs-list">
+                <li>Il ne remplace pas un passage au chronographe.</li>
+                <li>Il ne remplace ni le réglage terrain, ni le bare shaft test.</li>
+                <li>Il ne garantit pas un tuning parfait.</li>
+                <li>Il ne simule pas encore une flexion complète de flèche en éléments finis.</li>
+              </ul>
+            </div>
+          </article>
+        </section>
+
+        <section class="docs-grid docs-grid--two" id="methode">
+          <article class="card-glass docs-card relative overflow-hidden">
+            <div class="grid-lines"></div>
+            <div class="relative z-10">
+              <h2>Méthode balistique</h2>
+              <p>Le modèle part d’une vitesse initiale, de la masse, du diamètre et de l’angle de tir. Il combine ensuite la traînée, la densité de l’air et le vent pour calculer une trajectoire 2D ou 3D.</p>
+              <p>L’énergie et le momentum décrivent ce que la flèche conserve au fil du vol. Le holdover traduit la compensation nécessaire pour garder le point visé quand la flèche chute avec la distance.</p>
+            </div>
+          </article>
+
+          <article class="card-glass docs-card relative overflow-hidden">
+            <div class="grid-lines"></div>
+            <div class="relative z-10">
+              <h2>Spine</h2>
+              <p>Le spine est la rigidité du tube : un nombre bas indique une flèche plus raide, un nombre haut une flèche plus souple.</p>
+              <p>Les recommandations fiables viennent des tables fabricants. Le mode <strong>Spine généralisé</strong> fournit seulement une estimation indicative ; le choix final se valide toujours au tuning réel.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="docs-grid docs-grid--two">
+          <article class="card-glass docs-card relative overflow-hidden">
+            <div class="grid-lines"></div>
+            <div class="relative z-10">
+              <h2>FOC</h2>
+              <p>Le FOC décrit l’équilibre avant/arrière de la flèche.</p>
+              <div class="formula-box">FOC% = ((point d’équilibre - longueur/2) / longueur) × 100</div>
+              <p>Un FOC trop faible peut réduire la stabilité, tandis qu’un FOC très élevé peut pénaliser la dynamique globale. L’outil affiche donc un indicateur qualitatif plutôt qu’un verdict absolu.</p>
+            </div>
+          </article>
+
+          <article class="card-glass docs-card relative overflow-hidden">
+            <div class="grid-lines"></div>
+            <div class="relative z-10">
+              <h2>Tuning & stabilité</h2>
+              <p><strong>Porpoising</strong> désigne une oscillation verticale, <strong>fishtailing</strong> une oscillation latérale, et l’<strong>AoA</strong> l’angle d’attaque de la flèche.</p>
+              <p>Le score stabilité synthétise ces tendances pour aider au diagnostic. Ces lectures restent qualitatives et n’altèrent pas la trajectoire du centre de masse.</p>
+            </div>
+          </article>
+        </section>
+
+        <section class="card-glass docs-card docs-guide relative overflow-hidden" id="guide">
+          <div class="grid-lines"></div>
+          <div class="relative z-10">
+            <h2>Guide d’utilisation rapide</h2>
+            <div class="steps-grid">
+              <article><span>01</span><h3>Chronographe</h3><p>Renseigner la vitesse mesurée.</p></article>
+              <article><span>02</span><h3>Flèche</h3><p>Entrer masse, longueur, diamètre, pointe et insert.</p></article>
+              <article><span>03</span><h3>Arc & spine</h3><p>Choisir le type d’arc et la référence spine.</p></article>
+              <article><span>04</span><h3>Lecture balistique</h3><p>Lire trajectoire, énergie, momentum et dérive.</p></article>
+              <article><span>05</span><h3>Diagnostic</h3><p>Vérifier stabilité, FOC, spine et oscillations.</p></article>
+              <article><span>06</span><h3>Comparaison</h3><p>Sauvegarder plusieurs courbes pour comparer les setups.</p></article>
+            </div>
+          </div>
+        </section>
+
+        <section id="cas">
+          <div class="docs-section-heading">Cas d’usage</div>
+          <div class="docs-grid docs-grid--four">
+          <article class="card-glass docs-card use-card">
+            <h2>Préparateur d’arc</h2>
+            <p>Comparer des configurations client, vérifier la cohérence spine/FOC et préparer la discussion de réglage.</p>
+          </article>
+          <article class="card-glass docs-card use-card">
+            <h2>Vendeur</h2>
+            <p>Expliquer simplement l’impact d’un changement de flèche, de pointe ou de spine.</p>
+          </article>
+          <article class="card-glass docs-card use-card">
+            <h2>Archer passionné</h2>
+            <p>Comparer des setups et comprendre trajectoire, énergie et comportement en vol.</p>
+          </article>
+          <article class="card-glass docs-card use-card">
+            <h2>Chasse / parcours / cible</h2>
+            <p>Vérifier vitesse, énergie conservée, holdover et comportement au vent selon l’usage.</p>
+          </article>
+          </div>
+        </section>
+
+        <section id="limites">
+          <div class="docs-section-heading">Limites et prudence</div>
+          <div class="docs-grid docs-grid--three">
+            <article class="callout callout--important">
+              <span>Important</span>
+              <p>Les données fabricants peuvent être incomplètes ou varier d’une marque à l’autre.</p>
+            </article>
+            <article class="callout callout--limit">
+              <span>Limite</span>
+              <p>Le spine réel dépend aussi du tube, des composants, de la décoche et de l’arc.</p>
+            </article>
+            <article class="callout callout--tip">
+              <span>Conseil terrain</span>
+              <p>Le chronographe et le pas de tir restent les juges. La météo et la mesure influencent les résultats.</p>
+            </article>
+          </div>
+        </section>
+      </main>
+
+      <footer class="docs-footer">
+        <p>Archery Ballistics Simulator v3.1 © 2026 | Documentation d’aide à la décision</p>
+      </footer>
+    </div>
+  </div>
+  <script>
+    if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+      });
+    }
+  </script>
+</body>
+</html>

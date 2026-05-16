@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" role="img" aria-label="Archery Ballistics">
+  <defs>
+    <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#08111f"/>
+    </linearGradient>
+  </defs>
+  <rect width="192" height="192" rx="40" fill="url(#bg)"/>
+  <circle cx="96" cy="96" r="54" fill="none" stroke="#00f7ff" stroke-width="8"/>
+  <circle cx="96" cy="96" r="31" fill="none" stroke="#bd00ff" stroke-width="6"/>
+  <path d="M43 149 149 43" fill="none" stroke="#00f7ff" stroke-linecap="round" stroke-width="10"/>
+  <path d="m149 43-21 4 17 17Z" fill="#00f7ff"/>
+  <path d="M43 149 36 125M43 149l24 7" fill="none" stroke="#bd00ff" stroke-linecap="round" stroke-width="7"/>
+</svg>

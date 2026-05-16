@@ -43,3 +43,14 @@ test('3D scene stays transparent without opaque axis planes or oversized dispers
   assert.match(source, /Math\.min\(10, Math\.max\(2, p\.dispersionRadiusCm\)\)/);
   assert.doesNotMatch(source, /surfaceaxis|type:\s*'mesh3d'|type:\s*'surface'/);
 });
+
+test('mobile chart rendering stays touch-friendly and lazy', async () => {
+  const source = await readFile(new URL('../plotly-charts.js', import.meta.url), 'utf8');
+
+  assert.match(source, /dragmode: isMobileLayout\(\) \? 'pan' : 'zoom'/);
+  assert.match(source, /displayModeBar: false/);
+  assert.match(source, /scrollZoom: false/);
+  assert.match(source, /export function renderActiveChart/);
+  assert.match(source, /sampleForDisplay\(points/);
+  assert.match(source, /document\.body\.dataset\.mobilePanel === 'graphs'/);
+});

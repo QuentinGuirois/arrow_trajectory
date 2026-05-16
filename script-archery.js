@@ -5,7 +5,15 @@ import { appState, COLORS, DEFAULT_PARAMS, PRESETS } from './state.js';
 import { buildArrow } from './arrow-builder.js';
 import { resolveLaunch, buildSightMarks } from './calibration.js';
 import { computeTuningDiagnostics } from './tuning-diagnostics.js';
-import { renderAllCharts, purgeCharts, showTab, resizeCharts } from './plotly-charts.js';
+import {
+  renderActiveChart,
+  renderAllCharts,
+  purgeCharts,
+  resetThreeDView,
+  setLegendVisibility,
+  showTab,
+  resizeCharts
+} from './plotly-charts.js';
 import { decodeShare, encodeShare, loadSetups, saveSetups } from './share-schema.js';
 import { resolveSpineRecommendation } from './spine-recommendation.js';
 import { compareCurrentSpineToRange, computeSpineMismatch } from './spine-evaluation.js';
@@ -19,6 +27,8 @@ import { cmToMeters, formatNumber, gramsToGrains, grainsToGrams, mmToMeters, rea
 
 const trajWorker = new Worker('./trajectory.worker-archery.js', { type: 'module' });
 const $ = id => document.getElementById(id);
+const mobileLayoutQuery = window.matchMedia('(max-width: 767px)');
+let legendVisible = true;
 
 const numericFields = {
   fps: 190,
@@ -79,6 +89,42 @@ const SPINE_RELEVANT_FIELD_IDS = new Set([
 ]);
 
 const formHash = params => JSON.stringify(params);
+
+function isMobileLayout() {
+  return mobileLayoutQuery.matches;
+}
+
+function activateMobilePanel(panelName, { scroll = true } = {}) {
+  document.body.dataset.mobilePanel = panelName;
+  document.querySelectorAll('[data-mobile-panel]').forEach(panel => {
+    panel.classList.toggle('is-active', panel.dataset.mobilePanel === panelName);
+  });
+  document.querySelectorAll('[data-mobile-target]').forEach(button => {
+    button.classList.toggle('is-active', button.dataset.mobileTarget === panelName);
+  });
+
+  if (panelName === 'graphs') {
+    renderActiveChart();
+    resizeCharts();
+  }
+
+  if (scroll && isMobileLayout()) {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function syncResponsiveState() {
+  if (isMobileLayout()) {
+    const currentPanel = ['params', 'results', 'graphs', 'setups'].includes(document.body.dataset.mobilePanel)
+      ? document.body.dataset.mobilePanel
+      : 'params';
+    activateMobilePanel(currentPanel, { scroll: false });
+  } else {
+    document.body.dataset.mobilePanel = 'desktop';
+    renderAllCharts(curvesForDisplay());
+    resizeCharts();
+  }
+}
 
 function getFormValues() {
   const params = { ...DEFAULT_PARAMS };
@@ -542,6 +588,14 @@ function shareCurrentConfig() {
   });
 }
 
+function updateLegendToggleLabel() {
+  const button = $('toggleLegend');
+  if (!button) return;
+  button.innerHTML = legendVisible
+    ? '<i class="fas fa-list mr-2"></i>Masquer légende'
+    : '<i class="fas fa-list mr-2"></i>Afficher légende';
+}
+
 function loadConfigFromUrl() {
   if (!window.location.hash) return false;
   const shared = decodeShare(window.location.hash);
@@ -617,9 +671,23 @@ function bindEvents() {
     runSim();
   };
   $('shareConfig').onclick = shareCurrentConfig;
+  $('mobileSaveCurve').onclick = saveCurrentResult;
+  $('mobileResetCurves').onclick = $('resetCurves').onclick;
+  $('mobileShareConfig').onclick = shareCurrentConfig;
   document.querySelectorAll('footer .fa-share-alt').forEach(icon => {
     icon.parentElement.onclick = shareCurrentConfig;
   });
+
+  document.querySelectorAll('[data-mobile-target]').forEach(button => {
+    button.onclick = () => activateMobilePanel(button.dataset.mobileTarget);
+  });
+
+  $('toggleLegend').onclick = () => {
+    legendVisible = !legendVisible;
+    setLegendVisibility(legendVisible);
+    updateLegendToggleLabel();
+  };
+  $('reset3dView').onclick = resetThreeDView;
 
   const tabs = {
     tab2d: 'trajectory2D',
@@ -642,6 +710,15 @@ function bindEvents() {
   });
 
   window.addEventListener('resize', debounce(resizeCharts, 150));
+  window.addEventListener('orientationchange', debounce(() => {
+    renderAllCharts(curvesForDisplay());
+    resizeCharts();
+  }, 150));
+  if (mobileLayoutQuery.addEventListener) {
+    mobileLayoutQuery.addEventListener('change', syncResponsiveState);
+  } else {
+    mobileLayoutQuery.addListener(syncResponsiveState);
+  }
 }
 
 function handleUiModeChange() {
@@ -661,6 +738,8 @@ function handleImmediateSpineInput() {
 
 function bootstrap() {
   bindEvents();
+  updateLegendToggleLabel();
+  activateMobilePanel('params', { scroll: false });
   const persisted = loadSetups();
   if (Array.isArray(persisted) && persisted.length) {
     appState.savedCurves = persisted.filter(c => c?.curveData?.length);
@@ -679,6 +758,7 @@ function bootstrap() {
   updateSpineRecommendation();
   updateDerivedPanels();
   if (!loadConfigFromUrl()) runSim();
+  syncResponsiveState();
 }
 
 bootstrap();
