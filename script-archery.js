@@ -255,8 +255,7 @@ function buildManufacturerSpineSummary(params, recommendation, comparison) {
   if (recommendation.status !== 'available') {
     return {
       lines: [
-        `<b>${recommendation.note}</b>`,
-        '<span class="text-gray-400">Revenez &agrave; Spine g&eacute;n&eacute;ralis&eacute; pour une estimation indicative.</span>'
+        '<b>Recommandation indisponible pour ce setup.</b>'
       ]
     };
   }
@@ -264,14 +263,12 @@ function buildManufacturerSpineSummary(params, recommendation, comparison) {
   const row = recommendation.matchedRow;
   const sourceLabel = [
     row.manufacturer,
-    row.chartVersion,
-    row.productFamily || row.arrowMaterialFamily
+    row.chartTitle || row.sourceSection
   ].filter(Boolean).join(' ');
   const lines = [
-    `<b>${formatPrintedSpineLabel(recommendation.displayLabel)}</b>`,
+    `Recommandation ${recommendation.manufacturer} : <b>${formatPrintedSpineLabel(recommendation.displayLabel)}</b>`,
     `Votre spine : <b>${params.spineStatic || '&mdash;'}</b> &mdash; ${comparison.label}`,
     `<span class="text-gray-400">Source : ${sourceLabel || row.manufacturer}</span>`,
-    `<span class="text-gray-400">Table : ${row.sourceSection}${row.sourcePageLabel ? `, page ${row.sourcePageLabel}` : ''}</span>`,
     '<span class="text-gray-400">Nombre bas = plus raide.</span>'
   ];
 

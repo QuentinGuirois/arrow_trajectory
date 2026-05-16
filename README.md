@@ -57,11 +57,11 @@ Le spine statique est une mesure de déflexion du tube.
 - allonger la flèche ou alourdir la pointe assouplit le comportement dynamique ;
 - raccourcir la flèche ou alléger la pointe rigidifie le comportement dynamique.
 
-Les recommandations fabricant viennent uniquement de tables transcrites et vérifiées. Sans table vérifiée chargée, le simulateur retourne `no-data` et affiche : `Recommandation indisponible : aucune table fabricant vérifiée ne correspond à ces paramètres.`
+Les recommandations fabricant viennent uniquement de tables officielles transcrites et vérifiées. Le seed d'import vit dans `docs/bdd_spine/bdd_spine_links_codex.json`; il distingue les charts réellement exploitables, les manifests à compléter et les sources secondaires.
 
-Le mode `Spine généralisé` est une estimation indicative distincte : il agrège seulement les rows fabricant vérifiées déjà intégrées, sans remplacer les recommandations spécifiques d'une marque.
+Le mode `Spine généralisé` est une estimation indicative distincte : il agrège seulement les rows fabricant vérifiées déjà intégrées, sans remplacer les recommandations spécifiques d'une marque. Les sources secondaires servent au recoupement, jamais à fabriquer une recommandation constructeur officielle.
 
-Les valeurs saisies par l'utilisateur sont rattachées aux plages ou colonnes du tableau fabricant seulement lorsqu'une règle locale est documentée. Le simulateur n'extrapole pas hors tableau.
+Les valeurs saisies par l'utilisateur sont rattachées aux plages ou colonnes du tableau fabricant seulement lorsqu'une règle locale est documentée. Par défaut, `A+0.5` reste sur `A` et `A+0.6` monte à `A+1`; Easton remplace cette règle par son arrondi officiel à l'entier le plus proche. Le simulateur n'extrapole pas hors tableau.
 
 Le spine reste séparé de la trajectoire balistique : il ne modifie pas le vol du centre de masse. En revanche, le spine saisi est comparé à la plage conseillée et influence les diagnostics de tuning, surtout le risque de fishtailing.
 
@@ -75,7 +75,10 @@ L’étude scientifique locale documente les limites du spine statique et les pa
 - `units.js` : conversions et helpers numériques.
 - `simulation-params.js` : contrat physique normalisé et adaptateur depuis les champs historiques.
 - `arrow-builder.js` : masse, FOC, surface frontale, données de spine sans recommandation inventée.
-- `spine-tables.js` : registre séparé des sources fabricant et rows vérifiées.
+- `spine-sources.js` : registre de provenance et de statut des sources.
+- `spine-database.js` : charts réellement intégrés depuis le seed et les assets web officiels relus.
+- `spine-normalizer.js` : normalisation des matrices fabricants vers un format homogène.
+- `spine-tables.js` : façade de compatibilité autour de la base normalisée.
 - `spine-lookup.js` : recherche stricte + lookup utilisateur, sans extrapolation.
 - `spine-generalized.js` : estimation indicative issue des tables fabricant intégrées.
 - `spine-recommendation.js` : résolution unique du conseil utilisé par l'UI et le tuning.

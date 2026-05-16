@@ -7,6 +7,8 @@ import {
   lookupRecommendedSpineForUser,
   lookupManufacturerSpineForUser
 } from '../spine-lookup.js';
+import { SPINE_CHARTS } from '../spine-database.js';
+import { SPINE_MANIFEST_ONLY_SOURCES } from '../spine-sources.js';
 import { getGeneralizedSpineEstimate } from '../spine-generalized.js';
 import { resolveSpineRecommendation } from '../spine-recommendation.js';
 import {
@@ -25,6 +27,24 @@ import {
 } from '../tuning-diagnostics.js';
 import { DEFAULT_PARAMS } from '../state.js';
 import { resolveEffectiveDrawWeight } from '../draw-weight.js';
+
+test('JSON seed is readable, fully transcribed charts are imported, and manifest-only sources stay out of manufacturer recommendations', () => {
+  const seed = JSON.parse(readFileSync(new URL('../docs/bdd_spine/bdd_spine_links_codex.json', import.meta.url), 'utf8'));
+  const seedChartIds = seed.fully_transcribed_official_charts.map(chart => chart.chart_id);
+  const importedChartIds = new Set(SPINE_CHARTS.map(chart => chart.chartId));
+
+  assert.ok(seedChartIds.every(chartId => importedChartIds.has(chartId)));
+  assert.ok(SPINE_MANIFEST_ONLY_SOURCES.some(source => source.sourceId === 'skylon_target_chart_pdf'));
+  const skylon = lookupManufacturerSpineForUser(
+    {
+      bowType: 'recurve',
+      drawWeightLbs: 30,
+      arrowLengthIn: 28
+    },
+    'skylon'
+  );
+  assert.equal(skylon.status, 'unavailable');
+});
 
 test('lookup on metadata-only table returns no-data', () => {
   const result = lookupRecommendedSpine({}, 'easton_target');
@@ -77,7 +97,7 @@ const eastonAcAllCarbonCases = [
       fps: 310
     },
     expectedRecommendedSpinesLabel: '575-500',
-    sourceSection: 'A/C • ALL-CARBON ARROW CUT LENGTH',
+    sourceSection: 'A/C ALL-CARBON ARROW CUT LENGTH',
     sourcePageLabel: '1'
   },
   {
@@ -91,7 +111,7 @@ const eastonAcAllCarbonCases = [
       fps: 310
     },
     expectedRecommendedSpinesLabel: '200-150',
-    sourceSection: 'A/C • ALL-CARBON ARROW CUT LENGTH',
+    sourceSection: 'A/C ALL-CARBON ARROW CUT LENGTH',
     sourcePageLabel: '1'
   },
   {
@@ -104,7 +124,7 @@ const eastonAcAllCarbonCases = [
       releaseType: 'finger'
     },
     expectedRecommendedSpinesLabel: '2000-1800',
-    sourceSection: 'A/C • ALL-CARBON ARROW CUT LENGTH',
+    sourceSection: 'A/C ALL-CARBON ARROW CUT LENGTH',
     sourcePageLabel: '1'
   },
   {
@@ -117,7 +137,7 @@ const eastonAcAllCarbonCases = [
       releaseType: 'finger'
     },
     expectedRecommendedSpinesLabel: '300-250',
-    sourceSection: 'A/C • ALL-CARBON ARROW CUT LENGTH',
+    sourceSection: 'A/C ALL-CARBON ARROW CUT LENGTH',
     sourcePageLabel: '1'
   }
 ];
@@ -150,7 +170,7 @@ test('Easton A/C all-carbon manual no-data case: compound 40 lbs / 28.5 in => ""
       fps: 310
     },
     expectedRecommendedSpinesLabel: '',
-    sourceSection: 'A/C • ALL-CARBON ARROW CUT LENGTH',
+    sourceSection: 'A/C ALL-CARBON ARROW CUT LENGTH',
     sourcePageLabel: '1'
   };
 
@@ -203,7 +223,7 @@ test('Easton compound open lower band: 17.0 lbs does not match <17 and matches n
   assert.equal(result.matchedRow.drawWeightMaxExclusive, false);
 });
 
-test('Easton recurve open lower band: 19.9 lbs matches printed <20 lbs. row', () => {
+test('Easton recurve open lower band: 19.9 lbs matches printed <20 row', () => {
   const result = lookupRecommendedSpine(
     {
       bowType: 'recurve',
@@ -217,11 +237,11 @@ test('Easton recurve open lower band: 19.9 lbs matches printed <20 lbs. row', ()
 
   assert.equal(result.confidence, 'table');
   assert.equal(result.recommendedSpinesLabel, '2000');
-  assert.equal(result.matchedRow.drawWeightLabel, '<20 lbs.');
+  assert.equal(result.matchedRow.drawWeightLabel, '<20');
   assert.equal(result.matchedRow.drawWeightMaxExclusive, true);
 });
 
-test('Easton recurve open lower band: 20.0 lbs does not match <20 lbs. and returns no-data', () => {
+test('Easton recurve open lower band: 20.0 lbs does not match <20 and returns no-data', () => {
   const result = lookupRecommendedSpine(
     {
       bowType: 'recurve',
@@ -264,7 +284,7 @@ test('Victory strict lookup keeps compound charts separated and returns verified
   assert.equal(hlr.recommendedSpinesLabel, '250/235');
 });
 
-test('Victory strict lookup returns verified recurve cells and no-data outside partial transcription', () => {
+test('Victory strict lookup returns full recurve cells across the transcribed matrix', () => {
   const first = lookupRecommendedSpine(
     {
       bowType: 'recurve',
@@ -283,7 +303,7 @@ test('Victory strict lookup returns verified recurve cells and no-data outside p
     },
     'victory_recurve_spine_chart'
   );
-  const outsidePartialRows = lookupRecommendedSpine(
+  const third = lookupRecommendedSpine(
     {
       bowType: 'recurve',
       drawWeightLbs: 40,
@@ -295,41 +315,33 @@ test('Victory strict lookup returns verified recurve cells and no-data outside p
 
   assert.equal(first.recommendedSpinesLabel, '500');
   assert.equal(second.recommendedSpinesLabel, '400');
-  assert.equal(outsidePartialRows.confidence, 'no-data');
+  assert.equal(third.confidence, 'table');
+  assert.equal(third.recommendedSpinesLabel, '600');
 });
 
-test('Carbon Express strict lookup returns hunting and target cells while adjustment chart stays non-direct', () => {
-  const hunting = lookupRecommendedSpine(
-    {
-      bowType: 'recurve',
-      drawWeightLbs: 40,
-      arrowLengthIn: 29
-    },
-    'carbonexpress_hunting_shaft_selection'
-  );
-  const target = lookupRecommendedSpine(
+test('Carbon Express strict lookup returns light recurve and trispine official cells', () => {
+  const lightRecurve = lookupRecommendedSpine(
     {
       bowType: 'recurve',
       drawWeightLbs: 24,
-      arrowLengthIn: 29
+      arrowLengthIn: 26
     },
-    'carbonexpress_target_arrow_selection'
+    'carbonexpress_light_recurve_target_selection'
   );
-  const adjustmentOnly = lookupRecommendedSpine(
+  const trispine = lookupRecommendedSpine(
     {
       bowType: 'compound',
       drawWeightLbs: 40,
       arrowLengthIn: 29
     },
-    'carbonexpress_adjustable_weight_chart'
+    'carbonexpress_hunting_trispine_shaft_selection'
   );
 
-  assert.equal(hunting.recommendedSpinesLabel, '500 / XSD 500');
-  assert.equal(target.recommendedSpinesLabel, 'XB700');
-  assert.equal(adjustmentOnly.confidence, 'no-data');
+  assert.equal(lightRecurve.recommendedSpinesLabel, 'PT1000 / MXR1000 / NS1000');
+  assert.equal(trispine.recommendedSpinesLabel, '400 / SD 400 / TR 400');
 });
 
-test('Carbon Express strict lookup returns trispine verified rows and no-data outside partial transcription', () => {
+test('Carbon Express strict lookup returns full trispine rows and no-data outside the chart', () => {
   const first = lookupRecommendedSpine(
     {
       bowType: 'compound',
@@ -349,8 +361,8 @@ test('Carbon Express strict lookup returns trispine verified rows and no-data ou
   const noData = lookupRecommendedSpine(
     {
       bowType: 'compound',
-      drawWeightLbs: 40,
-      arrowLengthIn: 28
+      drawWeightLbs: 25,
+      arrowLengthIn: 31
     },
     'carbonexpress_hunting_trispine_shaft_selection'
   );
@@ -396,6 +408,183 @@ test('Gold Tip numeric charts are usable where manually verified', () => {
 
   assert.equal(compound.recommendedSpinesLabel, '400');
   assert.equal(recurve.recommendedSpinesLabel, '500');
+});
+
+test('Gold Tip chooses 315+ vs 315- and records the selected point-weight column', () => {
+  const plus = lookupManufacturerSpineForUser(
+    {
+      bowType: 'compound',
+      drawWeightLbs: 40,
+      arrowLengthIn: 29.1,
+      pointWeightGrains: 100,
+      bowRatingFps: 320
+    },
+    'goldtip'
+  );
+  const minus = lookupManufacturerSpineForUser(
+    {
+      bowType: 'compound',
+      drawWeightLbs: 40,
+      arrowLengthIn: 29.1,
+      pointWeightGrains: 100,
+      bowRatingFps: 300
+    },
+    'goldtip'
+  );
+  const heavyFront = lookupManufacturerSpineForUser(
+    {
+      bowType: 'compound',
+      drawWeightLbs: 40,
+      arrowLengthIn: 29.1,
+      pointWeightGrains: 150,
+      bowRatingFps: 320
+    },
+    'goldtip'
+  );
+
+  assert.equal(plus.chartId, 'gold_tip_compound_315_plus');
+  assert.equal(minus.chartId, 'gold_tip_compound_315_minus');
+  assert.equal(plus.resolvedInputs.pointWeightColumnGr, 100);
+  assert.equal(heavyFront.resolvedInputs.pointWeightColumnGr, 150);
+});
+
+test('Gold Tip manufacturer lookup covers three setups, decimal lengths, intermediate power, ranges, and out-of-chart rejection', () => {
+  const cases = [
+    { bowType: 'compound', drawWeightLbs: 40.5, arrowLengthIn: 29.5, pointWeightGrains: 100, bowRatingFps: 320 },
+    { bowType: 'compound', drawWeightLbs: 40.5, arrowLengthIn: 29.6, pointWeightGrains: 125, bowRatingFps: 300 },
+    { bowType: 'recurve', drawWeightLbs: 40.5, arrowLengthIn: 29.5, pointWeightGrains: 150 }
+  ].map(params => lookupManufacturerSpineForUser(params, 'goldtip'));
+  const outside = lookupManufacturerSpineForUser(
+    {
+      bowType: 'compound',
+      drawWeightLbs: 95,
+      arrowLengthIn: 34,
+      pointWeightGrains: 100,
+      bowRatingFps: 320
+    },
+    'goldtip'
+  );
+
+  assert.ok(cases.every(result => result.status === 'available'));
+  assert.equal(cases[0].resolvedInputs.chartArrowLengthIn, 29);
+  assert.equal(cases[1].resolvedInputs.chartArrowLengthIn, 30);
+  assert.equal(cases[0].resolvedInputs.matchedDrawWeightRangeLabel, '40-44');
+  assert.ok(cases.every(result => Number.isFinite(result.rangeMin) && Number.isFinite(result.rangeMax)));
+  assert.equal(outside.status, 'unavailable');
+});
+
+test('Black Eagle manufacturer lookup selects front-weight classes and keeps matrix bounds strict', () => {
+  const base = lookupManufacturerSpineForUser(
+    {
+      bowType: 'compound',
+      drawWeightLbs: 41.5,
+      arrowLengthIn: 29.5,
+      pointWeightGrains: 100,
+      insertWeightGrains: 12
+    },
+    'blackeagle'
+  );
+  const heavy = lookupManufacturerSpineForUser(
+    {
+      bowType: 'compound',
+      drawWeightLbs: 41.5,
+      arrowLengthIn: 29.6,
+      pointWeightGrains: 250,
+      insertWeightGrains: 10
+    },
+    'blackeagle'
+  );
+  const third = lookupManufacturerSpineForUser(
+    {
+      bowType: 'compound',
+      drawWeightLbs: 66.5,
+      arrowLengthIn: 30.1,
+      pointWeightGrains: 200
+    },
+    'blackeagle'
+  );
+  const outside = lookupManufacturerSpineForUser(
+    {
+      bowType: 'compound',
+      drawWeightLbs: 95,
+      arrowLengthIn: 34,
+      pointWeightGrains: 100
+    },
+    'blackeagle'
+  );
+
+  assert.equal(base.status, 'available');
+  assert.equal(base.resolvedInputs.frontWeightClassGr, '100-125');
+  assert.equal(heavy.status, 'available');
+  assert.equal(heavy.resolvedInputs.frontWeightClassGr, '250+');
+  assert.equal(third.status, 'available');
+  assert.equal(base.resolvedInputs.chartArrowLengthIn, 29);
+  assert.equal(heavy.resolvedInputs.chartArrowLengthIn, 30);
+  assert.equal(base.resolvedInputs.matchedDrawWeightRangeLabel, '41-45');
+  assert.ok(Number.isFinite(base.rangeMin) && Number.isFinite(base.rangeMax));
+  assert.equal(outside.status, 'unavailable');
+});
+
+test('Victory manufacturer lookup covers compound and recurve with decimal lengths, bands, ranges, and outside rejection', () => {
+  const cases = [
+    lookupManufacturerSpineForUser(
+      { bowType: 'compound', drawWeightLbs: 42.5, arrowLengthIn: 29.5, bowRatingFps: 320 },
+      'victory'
+    ),
+    lookupManufacturerSpineForUser(
+      { bowType: 'compound', drawWeightLbs: 79.5, arrowLengthIn: 28.6, bowRatingFps: 320 },
+      'victory'
+    ),
+    lookupManufacturerSpineForUser(
+      { bowType: 'recurve', drawWeightLbs: 40.5, arrowLengthIn: 29.5, pointWeightGrains: 100 },
+      'victory'
+    )
+  ];
+  const outside = lookupManufacturerSpineForUser(
+    { bowType: 'recurve', drawWeightLbs: 80, arrowLengthIn: 35, pointWeightGrains: 100 },
+    'victory'
+  );
+
+  assert.ok(cases.every(result => result.status === 'available'));
+  assert.equal(cases[0].resolvedInputs.chartArrowLengthIn, 29);
+  assert.equal(cases[1].resolvedInputs.chartArrowLengthIn, 29);
+  assert.equal(cases[2].resolvedInputs.matchedDrawWeightRangeLabel, '37-41');
+  assert.ok(cases.every(result => Number.isFinite(result.rangeMin) && Number.isFinite(result.rangeMax)));
+  assert.equal(outside.status, 'unavailable');
+});
+
+test('Carbon Express manufacturer lookup covers imported charts and stays explicit about adjusted weight', () => {
+  const recurveA = lookupManufacturerSpineForUser(
+    { bowType: 'recurve', drawWeightLbs: 24.5, arrowLengthIn: 26.5 },
+    'carbonexpress'
+  );
+  const recurveB = lookupManufacturerSpineForUser(
+    { bowType: 'recurve', drawWeightLbs: 29.5, arrowLengthIn: 26.6 },
+    'carbonexpress'
+  );
+  const compound = lookupManufacturerSpineForUser(
+    {
+      bowType: 'compound',
+      drawWeightLbs: 40,
+      adjustedDrawWeightLbs: 40.5,
+      arrowLengthIn: 29.6
+    },
+    'carbonexpress'
+  );
+  const outside = lookupManufacturerSpineForUser(
+    { bowType: 'recurve', drawWeightLbs: 40, arrowLengthIn: 29 },
+    'carbonexpress'
+  );
+
+  assert.equal(recurveA.status, 'available');
+  assert.equal(recurveB.status, 'available');
+  assert.equal(compound.status, 'available');
+  assert.equal(recurveA.resolvedInputs.chartArrowLengthIn, 26);
+  assert.equal(recurveB.resolvedInputs.chartArrowLengthIn, 27);
+  assert.equal(compound.resolvedInputs.chartArrowLengthIn, 30);
+  assert.equal(compound.resolvedInputs.matchedDrawWeightRangeLabel, '40-47');
+  assert.ok(Number.isFinite(recurveA.rangeMin) && Number.isFinite(recurveA.rangeMax));
+  assert.equal(outside.status, 'unavailable');
 });
 
 test('Easton user lookup rounds documented fractional lengths but strict lookup remains exact', () => {
@@ -563,7 +752,7 @@ test('Easton user lookup preserves open-bound behavior', () => {
 
   assert.equal(compoundBelow.matchedRow.drawWeightLabel, '<17');
   assert.equal(compoundAt.matchedRow.drawWeightLabel, '17-23');
-  assert.equal(recurveBelow.matchedRow.drawWeightLabel, '<20 lbs.');
+  assert.equal(recurveBelow.matchedRow.drawWeightLabel, '<20');
   assert.equal(recurveAt.confidence, 'no-data');
 });
 
@@ -589,10 +778,34 @@ test('generalized spine uses several integrated manufacturers and keeps an indic
   assert.equal(typeof available.suggestedSpine, 'number');
   assert.ok(available.rangeLabel.length > 0);
   assert.ok(available.sourceManufacturers.includes('Easton'));
-  assert.ok(available.sourceManufacturers.includes('Victory Archery'));
-  assert.ok(available.sourceManufacturers.includes('Carbon Express'));
+  assert.ok(available.sourceManufacturers.includes('Victory'));
   assert.equal(fallback.status, 'available');
   assert.equal(fallback.basis, 'nearest');
+});
+
+test('generalized mode is fed by the integrated manufacturer families when setups overlap', () => {
+  const compound = getGeneralizedSpineEstimate({
+    bowType: 'compound',
+    drawWeightLbs: 52,
+    drawLengthIn: 29,
+    arrowLengthIn: 28,
+    pointWeightGrains: 100,
+    insertWeightGrains: 12,
+    bowRatingFps: 320
+  });
+  const carbonRecurve = getGeneralizedSpineEstimate({
+    bowType: 'recurve',
+    drawWeightLbs: 24,
+    drawLengthIn: 28,
+    arrowLengthIn: 26,
+    pointWeightGrains: 100,
+    insertWeightGrains: 0
+  });
+
+  assert.ok(['Easton', 'Gold Tip', 'Black Eagle', 'Victory'].every(name =>
+    compound.sourceManufacturers.includes(name)
+  ));
+  assert.ok(carbonRecurve.sourceManufacturers.includes('Carbon Express'));
 });
 
 test('strict manufacturer lookup stays distinct from generalized estimate', () => {
@@ -713,6 +926,38 @@ test('spine mismatch increases fishtailing while in-range keeps spine-related ri
   assert.match(tooStiff.diagnostics.find(item => item.label === 'Spine').detail, /plus raide/);
 });
 
+test('manufacturer ranges feed tuning the same way generalized ranges do', () => {
+  const params = {
+    ...DEFAULT_PARAMS,
+    bowType: 'compound',
+    drawWeightLbs: 40,
+    drawWeightBasis: 'actual',
+    arrowLengthIn: 29,
+    pointWeightGrains: 100,
+    spineReference: 'goldtip',
+    bowRatingFps: 320,
+    plungerStiffness: 0.5,
+    centerShotMm: 0,
+    releaseErrorLateralMm: 0,
+    nockingPointOffsetMm: 0,
+    releaseErrorVerticalMm: 0
+  };
+  const recommendation = resolveSpineRecommendation(params);
+  const arrow = buildArrow(params);
+  const inRange = calculateTuningModel(
+    { ...params, spineStatic: recommendation.rangeMin, spineRecommendation: recommendation },
+    arrow
+  );
+  const mismatch = calculateTuningModel(
+    { ...params, spineStatic: recommendation.rangeMax + 120, spineRecommendation: recommendation },
+    arrow
+  );
+
+  assert.equal(recommendation.mode, 'manufacturer');
+  assert.equal(recommendation.status, 'available');
+  assert.ok(mismatch.fishtailing.amplitudeCm > inRange.fishtailing.amplitudeCm);
+});
+
 test('advanced mode wiring updates immediately without waiting for the debounced trajectory path', () => {
   const source = readFileSync(new URL('../script-archery.js', import.meta.url), 'utf8');
   assert.match(source, /\$\('uiMode'\)\.addEventListener\('change', handleUiModeChange\)/);
@@ -809,9 +1054,9 @@ test('manufacturer recommendations expose numeric ranges for covered user setups
   const carbonExpress = resolveSpineRecommendation({
     ...DEFAULT_PARAMS,
     bowType: 'recurve',
-    drawWeightLbs: 40,
+    drawWeightLbs: 24,
     drawWeightBasis: 'actual',
-    arrowLengthIn: 29.1,
+    arrowLengthIn: 26.1,
     pointWeightGrains: 100,
     spineReference: 'carbonexpress'
   });

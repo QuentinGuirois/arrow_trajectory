@@ -1,0 +1,594 @@
+{
+    "meta": {
+      "file_name": "spine_database_seed.json",
+      "language": "fr-FR",
+      "generated_on": "2026-05-16",
+      "purpose": "Single-file seed database for Codex to power manufacturer spine recommendations, UX rounding, source traceability, and future chart expansion.",
+      "design_note": "This file intentionally mixes fully transcribed official charts, source manifests pinned to official URLs, and supplemental product-spec datasets."
+    },
+    "project_rules": {
+      "ux_rounding_rule_preferred_by_project": {
+        "id": "project_floor_until_0_5_then_up_from_0_6",
+        "description_fr": "Si l’utilisateur tape A+0.5, rester sur A. Si l’utilisateur tape A+0.6, monter à A+1.",
+        "example_inputs": [
+          { "input_length_in": 29.0, "resolved_column_in": 29 },
+          { "input_length_in": 29.5, "resolved_column_in": 29 },
+          { "input_length_in": 29.6, "resolved_column_in": 30 }
+        ]
+      },
+      "source_specific_rounding_rules": [
+        {
+          "manufacturer": "Easton",
+          "chart_id": "easton_target_301055A_ac_all_carbon",
+          "rule_type": "official_nearest_whole_inch",
+          "description_fr": "Règle imprimée Easton: arrondir à la colonne entière la plus proche; 28.25 -> 28 et 28.5 -> 29.",
+          "examples": [
+            { "input_length_in": 28.25, "resolved_column_in": 28 },
+            { "input_length_in": 28.5, "resolved_column_in": 29 }
+          ]
+        }
+      ],
+      "band_matching_rule": {
+        "type": "inclusive_band_match",
+        "description_fr": "Une valeur utilisateur intermédiaire matche la bande imprimée qui la contient, sauf borne exclusive explicitement signalée."
+      },
+      "priority_rule_for_chart_dimensions": {
+        "description_fr": "Si le chart est indexé par longueur de flèche, utiliser arrowLengthIn. Si le chart est indexé par allonge/draw length, utiliser drawLengthIn. Ne jamais inventer une conversion non documentée à l’intérieur de la source."
+      }
+    },
+    "sources": [
+      {
+        "source_id": "easton_target_301055A_pdf",
+        "type": "official_manufacturer_pdf",
+        "manufacturer": "Easton",
+        "title": "301055-A Arrow Shaft Selection Target",
+        "url": "https://eastonarchery.com/wp-content/uploads/2023/08/301055-A-Arrow-Shaft-Selection-Target.pdf"
+      },
+      {
+        "source_id": "easton_hunting_301055A_pdf",
+        "type": "official_manufacturer_pdf",
+        "manufacturer": "Easton",
+        "title": "301055-A Arrow Shaft Selection Hunting",
+        "url": "https://eastonarchery.com/wp-content/uploads/2023/08/301055-A-Arrow-Shaft-Selection-Hunting.pdf"
+      },
+      {
+        "source_id": "easton_target_selector_page",
+        "type": "official_manufacturer_page",
+        "manufacturer": "Easton",
+        "title": "Target Shaft Selector page",
+        "url": "https://eastonarchery.com/targetshaftselector/"
+      },
+      {
+        "source_id": "gold_tip_spine_selector_page",
+        "type": "official_manufacturer_page",
+        "manufacturer": "Gold Tip",
+        "title": "Spine Selector Tool",
+        "url": "https://goldtip.com/pages/spine-selector"
+      },
+      {
+        "source_id": "black_eagle_spine_chart_page",
+        "type": "official_manufacturer_page",
+        "manufacturer": "Black Eagle",
+        "title": "Black Eagle Arrows Spine Chart",
+        "url": "https://blackeaglearrows.com/arrow-sizing-spine-chart/"
+      },
+      {
+        "source_id": "victory_arrow_guide_page",
+        "type": "official_manufacturer_page",
+        "manufacturer": "Victory",
+        "title": "Arrow Guide",
+        "url": "https://victoryarchery.com/arrow-guide/"
+      },
+      {
+        "source_id": "victory_faq_page",
+        "type": "official_manufacturer_page",
+        "manufacturer": "Victory",
+        "title": "FAQ",
+        "url": "https://victoryarchery.com/faq/"
+      },
+      {
+        "source_id": "carbon_express_chart_hub",
+        "type": "official_manufacturer_page",
+        "manufacturer": "Carbon Express",
+        "title": "Carbon Express Arrow Charts hub",
+        "url": "https://feradyne.com/pages/carbon-express-arrow-charts"
+      },
+      {
+        "source_id": "skylon_target_chart_pdf",
+        "type": "official_manufacturer_pdf",
+        "manufacturer": "Skylon",
+        "title": "chart target.pdf",
+        "url": "https://www.skylonarchery.com/images/chart/chart%20target.pdf"
+      },
+      {
+        "source_id": "skylon_hunting_chart_pdf",
+        "type": "official_manufacturer_pdf",
+        "manufacturer": "Skylon",
+        "title": "chart hunting.pdf",
+        "url": "https://www.skylonarchery.com/images/chart/chart%20hunting.pdf"
+      },
+      {
+        "source_id": "three_rivers_spine_charts_pdf",
+        "type": "secondary_retailer_pdf",
+        "manufacturer": "3Rivers Archery",
+        "title": "Spine Selection Charts",
+        "url": "https://www.3riversarchery.com/pdf/ArrowCharts.pdf"
+      },
+      {
+        "source_id": "three_rivers_wood_chart_pdf",
+        "type": "secondary_retailer_pdf",
+        "manufacturer": "3Rivers Archery",
+        "title": "Wood shaft spine chart",
+        "url": "https://www.3riversarchery.com/pdf/woodchart.pdf"
+      },
+      {
+        "source_id": "three_rivers_dynamic_spine_calc",
+        "type": "secondary_retailer_tool",
+        "manufacturer": "3Rivers Archery",
+        "title": "Dynamic Spine Arrow Calculator",
+        "url": "https://www.3riversarchery.com/dynamic-spine-arrow-calculator-from-3rivers-archery.html"
+      },
+      {
+        "source_id": "ashby_arrow_spine_calculator",
+        "type": "secondary_calculator",
+        "manufacturer": "Ashby Bowhunting Foundation",
+        "title": "ABF Arrow Spine Calculator",
+        "url": "https://www.ashbybowhunting.org/arrow-spine-calculator"
+      },
+      {
+        "source_id": "stu_miller_mirror_fr",
+        "type": "community_mirror",
+        "manufacturer": "Community mirror",
+        "title": "V2 Dynamic Spine Calculator Rev 12-25-10",
+        "url": "https://archers3d.jimdofree.com/calculateur-de-spine/"
+      },
+      {
+        "source_id": "arrow_builder_spreadsheet_thread",
+        "type": "community_spreadsheet_reference",
+        "manufacturer": "Community",
+        "title": "Arrow Builder Spreadsheet thread",
+        "url": "https://rokslide.com/forums/threads/arrow-builder-spreadsheet.389861/"
+      },
+      {
+        "source_id": "pandarus_infinity_page",
+        "type": "official_product_page",
+        "manufacturer": "Pandarus",
+        "title": "Infinity",
+        "url": "https://www.pandarusarchery.com/infinity4d2a3aac"
+      },
+      {
+        "source_id": "pandarus_elite_ca320_page",
+        "type": "official_product_page",
+        "manufacturer": "Pandarus",
+        "title": "Elite CA320",
+        "url": "https://www.pandarusarchery.com/elite_ca320"
+      }
+    ],
+    "fully_transcribed_official_charts": [
+      {
+        "chart_id": "easton_target_301055A_ac_all_carbon",
+        "status": "fully_transcribed",
+        "confidence": "high",
+        "manufacturer": "Easton",
+        "source_id": "easton_target_301055A_pdf",
+        "chart_version": "301055-A",
+        "chart_section": "A/C ALL-CARBON ARROW CUT LENGTH",
+        "bow_types": ["compound", "recurve"],
+        "length_measure": "measured to throat of nock",
+        "point_weight_baseline_gr": 100,
+        "release_type_baseline": {
+          "compound": "mechanical",
+          "recurve": "finger"
+        },
+        "bow_speed_baseline": {
+          "compound": "301-320 FPS",
+          "recurve": null
+        },
+        "adjustment_rules": [
+          "Compound bow speed rating: up to 275 FPS = -10 lbs; 276-300 FPS = -5 lbs; 301-320 FPS = no adjustment; 321-340 FPS = +5 lbs; 341-350 FPS = +10 lbs; 351 FPS or higher = +15 lbs.",
+          "Compound release type: mechanical release = no adjustment; finger release = +5 lbs.",
+          "Points <100 grains = -3 lbs per 25 grains below 100; points = 100 grains = no adjustment; points >100 grains = +3 lbs per 25 grains above 100.",
+          "Recurve bow: carbon competition limb = no adjustment; wood/glass beginner limb = -5 lbs."
+        ],
+        "length_columns_in": [21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34],
+        "draw_weight_bands": {
+          "compound": [
+            { "label": "<17", "min_lbs": null, "max_lbs": 17, "max_exclusive": true },
+            { "label": "17-23", "min_lbs": 17, "max_lbs": 23 },
+            { "label": "24-28", "min_lbs": 24, "max_lbs": 28 },
+            { "label": "29-34", "min_lbs": 29, "max_lbs": 34 },
+            { "label": "35-39", "min_lbs": 35, "max_lbs": 39 },
+            { "label": "40-44", "min_lbs": 40, "max_lbs": 44 },
+            { "label": "45-49", "min_lbs": 45, "max_lbs": 49 },
+            { "label": "50-54", "min_lbs": 50, "max_lbs": 54 },
+            { "label": "55-59", "min_lbs": 55, "max_lbs": 59 },
+            { "label": "60-64", "min_lbs": 60, "max_lbs": 64 },
+            { "label": "65-69", "min_lbs": 65, "max_lbs": 69 },
+            { "label": "70-76", "min_lbs": 70, "max_lbs": 76 }
+          ],
+          "recurve": [
+            { "label": "<20", "min_lbs": null, "max_lbs": 20, "max_exclusive": true },
+            { "label": "21-26", "min_lbs": 21, "max_lbs": 26 },
+            { "label": "27-31", "min_lbs": 27, "max_lbs": 31 },
+            { "label": "32-35", "min_lbs": 32, "max_lbs": 35 },
+            { "label": "36-39", "min_lbs": 36, "max_lbs": 39 },
+            { "label": "40-43", "min_lbs": 40, "max_lbs": 43 },
+            { "label": "44-47", "min_lbs": 44, "max_lbs": 47 },
+            { "label": "48-52", "min_lbs": 48, "max_lbs": 52 },
+            { "label": "53-57", "min_lbs": 53, "max_lbs": 57 },
+            { "label": "58-62", "min_lbs": 58, "max_lbs": 62 },
+            { "label": "63-67", "min_lbs": 63, "max_lbs": 67 },
+            { "label": "68-73", "min_lbs": 68, "max_lbs": 73 }
+          ]
+        },
+        "matrix": [
+          ["2000", "2000", "2000-1800", "1800-1700", "1750-1400", "1450-1200", "1250-1050", "1080-880", "900-750", "800-700", "720-625", "675-600", "640-570", "575-500"],
+          ["2000", "2000-1800", "1800-1700", "1750-1400", "1450-1200", "1250-1050", "1080-880", "900-750", "800-700", "720-625", "675-600", "640-570", "575-500", "525-450"],
+          ["2000-1800", "1800-1700", "1750-1400", "1450-1200", "1250-1050", "1080-880", "900-750", "800-700", "720-625", "675-600", "640-570", "575-500", "525-450", "475-400"],
+          ["1800-1700", "1750-1400", "1450-1200", "1250-1050", "1080-880", "900-750", "800-700", "720-625", "675-600", "640-570", "575-500", "525-450", "475-400", "440-370"],
+          ["1750-1400", "1450-1200", "1250-1050", "1080-880", "900-750", "800-700", "720-625", "675-600", "640-570", "575-500", "525-450", "475-400", "440-370", "400-340"],
+          ["1450-1200", "1250-1050", "1080-880", "900-750", "800-700", "720-625", "675-600", "640-570", "575-500", "525-450", "475-400", "440-370", "400-340", "370-310"],
+          ["1250-1050", "1080-880", "900-750", "800-700", "720-625", "675-600", "640-570", "575-500", "525-450", "475-400", "440-370", "400-340", "370-310", "340-300"],
+          ["1080-880", "900-750", "800-700", "720-625", "675-600", "640-570", "575-500", "525-450", "475-400", "440-370", "400-340", "370-310", "340-300", "300-250"],
+          ["900-750", "800-700", "720-625", "675-600", "640-570", "575-500", "525-450", "475-400", "440-370", "400-340", "370-310", "340-300", "300-250", "250-200"],
+          ["800-700", "720-625", "675-600", "640-570", "575-500", "525-450", "475-400", "440-370", "400-340", "370-310", "340-300", "300-250", "250-200", "250-200"],
+          ["720-625", "675-600", "640-570", "575-500", "525-450", "475-400", "440-370", "400-340", "370-310", "340-300", "300-250", "250-200", "250-200", "250-200"],
+          ["675-600", "640-570", "575-500", "525-450", "475-400", "440-370", "400-340", "370-310", "340-300", "300-250", "250-200", "250-200", "250-200", "200-150"]
+        ]
+      },
+      {
+        "chart_id": "gold_tip_compound_315_plus",
+        "status": "fully_transcribed",
+        "confidence": "high",
+        "manufacturer": "Gold Tip",
+        "source_id": "gold_tip_spine_selector_page",
+        "chart_title": "Compound Bow / IBO Speed 315+ (FPS)",
+        "bow_types": ["compound"],
+        "speed_class": "IBO 315+ FPS",
+        "length_measure": "throat of nock to end of insert",
+        "point_weight_definition": "point + insert + Ballistic Collar + FACT weight",
+        "point_weight_columns_gr": [100, 125, 150],
+        "length_columns_in": [25, 26, 27, 28, 29, 30, 31, 32],
+        "advisory_notes": [
+          "If you are shooting a longer broadhead than field point, you may want to choose a slightly stiffer shaft.",
+          "Compound bows with finger release: start two boxes to the weaker side (to the left), start with the arrow 1 inch longer, and cut down 1/4 inch at a time."
+        ],
+        "rows": [
+          { "draw_weight_bands_by_point_weight_gr": { "100": "30-34", "125": null, "150": null }, "cells_by_length_in": { "25": "700", "26": "600", "27": "600", "28": "500", "29": "500", "30": "500", "31": "400", "32": "400" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "35-39", "125": "30-34", "150": null }, "cells_by_length_in": { "25": "600", "26": "600", "27": "500", "28": "500", "29": "500", "30": "400", "31": "400", "32": "400" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "40-44", "125": "35-39", "150": "30-34" }, "cells_by_length_in": { "25": "600", "26": "500", "27": "500", "28": "500", "29": "400", "30": "400", "31": "400", "32": "340" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "45-49", "125": "40-44", "150": "35-39" }, "cells_by_length_in": { "25": "500", "26": "500", "27": "500", "28": "400", "29": "400", "30": "400", "31": "340", "32": "340" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "50-54", "125": "45-49", "150": "40-44" }, "cells_by_length_in": { "25": "500", "26": "500", "27": "400", "28": "400", "29": "400", "30": "340", "31": "340", "32": "300" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "55-59", "125": "50-54", "150": "45-49" }, "cells_by_length_in": { "25": "500", "26": "400", "27": "400", "28": "400", "29": "340", "30": "340", "31": "300", "32": "300" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "60-64", "125": "55-59", "150": "50-54" }, "cells_by_length_in": { "25": "400", "26": "400", "27": "400", "28": "340", "29": "340", "30": "300", "31": "300", "32": "300" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "65-69", "125": "60-64", "150": "55-59" }, "cells_by_length_in": { "25": "400", "26": "400", "27": "340", "28": "340", "29": "300", "30": "300", "31": "300", "32": "250" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "70-74", "125": "65-69", "150": "60-64" }, "cells_by_length_in": { "25": "400", "26": "340", "27": "340", "28": "300", "29": "300", "30": "300", "31": "250", "32": "250" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "75-79", "125": "70-74", "150": "65-69" }, "cells_by_length_in": { "25": "340", "26": "340", "27": "300", "28": "300", "29": "300", "30": "250", "31": "250", "32": "200" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "80-84", "125": "75-79", "150": "70-74" }, "cells_by_length_in": { "25": "340", "26": "300", "27": "300", "28": "300", "29": "250", "30": "250", "31": "200", "32": "200" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": null, "125": "80-84", "150": "75-79" }, "cells_by_length_in": { "25": "300", "26": "300", "27": "300", "28": "250", "29": "250", "30": "200", "31": "200", "32": "200" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": null, "125": null, "150": "80-84" }, "cells_by_length_in": { "25": "300", "26": "300", "27": "250", "28": "250", "29": "200", "30": "200", "31": "200", "32": "150" } }
+        ]
+      },
+      {
+        "chart_id": "gold_tip_compound_315_minus",
+        "status": "fully_transcribed",
+        "confidence": "high",
+        "manufacturer": "Gold Tip",
+        "source_id": "gold_tip_spine_selector_page",
+        "chart_title": "Compound Bow / IBO Speed 315- (FPS)",
+        "bow_types": ["compound"],
+        "speed_class": "IBO 315- FPS",
+        "length_measure": "throat of nock to end of insert",
+        "point_weight_definition": "point + insert + Ballistic Collar + FACT weight",
+        "point_weight_columns_gr": [100, 125, 150],
+        "length_columns_in": [25, 26, 27, 28, 29, 30, 31, 32],
+        "advisory_notes": [
+          "If you are shooting a longer broadhead than field point, you may want to choose a slightly stiffer shaft.",
+          "Compound bows with finger release: start two boxes to the weaker side (to the left), start with the arrow 1 inch longer, and cut down 1/4 inch at a time."
+        ],
+        "rows": [
+          { "draw_weight_bands_by_point_weight_gr": { "100": "30-34", "125": null, "150": null }, "cells_by_length_in": { "25": "700", "26": "600", "27": "600", "28": "600", "29": "500", "30": "500", "31": "500", "32": "400" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "35-39", "125": "30-34", "150": null }, "cells_by_length_in": { "25": "600", "26": "600", "27": "600", "28": "500", "29": "500", "30": "500", "31": "400", "32": "400" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "40-44", "125": "35-39", "150": "30-34" }, "cells_by_length_in": { "25": "600", "26": "600", "27": "500", "28": "500", "29": "500", "30": "400", "31": "400", "32": "400" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "45-49", "125": "40-44", "150": "35-39" }, "cells_by_length_in": { "25": "600", "26": "500", "27": "500", "28": "500", "29": "400", "30": "400", "31": "400", "32": "340" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "50-54", "125": "45-49", "150": "40-44" }, "cells_by_length_in": { "25": "500", "26": "500", "27": "500", "28": "400", "29": "400", "30": "400", "31": "340", "32": "340" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "55-59", "125": "50-54", "150": "45-49" }, "cells_by_length_in": { "25": "500", "26": "500", "27": "400", "28": "400", "29": "400", "30": "340", "31": "340", "32": "300" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "60-64", "125": "55-59", "150": "50-54" }, "cells_by_length_in": { "25": "500", "26": "400", "27": "400", "28": "400", "29": "340", "30": "340", "31": "300", "32": "300" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "65-69", "125": "60-64", "150": "55-59" }, "cells_by_length_in": { "25": "400", "26": "400", "27": "400", "28": "340", "29": "340", "30": "300", "31": "300", "32": "300" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "70-74", "125": "65-69", "150": "60-64" }, "cells_by_length_in": { "25": "400", "26": "400", "27": "340", "28": "340", "29": "300", "30": "300", "31": "300", "32": "250" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "75-79", "125": "70-74", "150": "65-69" }, "cells_by_length_in": { "25": "400", "26": "340", "27": "340", "28": "300", "29": "300", "30": "300", "31": "250", "32": "250" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "80-84", "125": "75-79", "150": "70-74" }, "cells_by_length_in": { "25": "340", "26": "340", "27": "300", "28": "300", "29": "250", "30": "250", "31": "250", "32": "200" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": null, "125": "80-84", "150": "75-79" }, "cells_by_length_in": { "25": "300", "26": "300", "27": "300", "28": "300", "29": "250", "30": "250", "31": "200", "32": "200" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": null, "125": null, "150": "80-84" }, "cells_by_length_in": { "25": "300", "26": "300", "27": "300", "28": "250", "29": "250", "30": "200", "31": "200", "32": "200" } }
+        ]
+      },
+      {
+        "chart_id": "gold_tip_recurve",
+        "status": "fully_transcribed",
+        "confidence": "high",
+        "manufacturer": "Gold Tip",
+        "source_id": "gold_tip_spine_selector_page",
+        "chart_title": "Recurve Bow",
+        "bow_types": ["recurve", "longbow"],
+        "length_measure": "throat of nock to end of insert",
+        "point_weight_definition": "point + insert + Ballistic Collar + FACT weight",
+        "point_weight_columns_gr": [100, 125, 150],
+        "length_columns_in": [25, 26, 27, 28, 29, 30, 31, 32],
+        "advisory_notes": [
+          "For recurve/longbow, first establish the draw weight of the bow at the length you draw it to.",
+          "Start with the arrow at least 1 inch longer than the desired finished arrow and cut the shaft down 1/4 inch at a time.",
+          "Use the Gold Tip weight system to fine tune spine reaction and increase arrow mass."
+        ],
+        "rows": [
+          { "draw_weight_bands_by_point_weight_gr": { "100": "30-34", "125": "30-34", "150": null }, "cells_by_length_in": { "25": "700", "26": "600", "27": "600", "28": "600", "29": "500", "30": "500", "31": "500", "32": "400" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "35-39", "125": "35-39", "150": "30-34" }, "cells_by_length_in": { "25": "600", "26": "600", "27": "600", "28": "500", "29": "500", "30": "500", "31": "400", "32": "400" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "40-44", "125": "40-44", "150": "35-39" }, "cells_by_length_in": { "25": "600", "26": "600", "27": "500", "28": "500", "29": "500", "30": "400", "31": "400", "32": "400" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "45-49", "125": "45-49", "150": "40-44" }, "cells_by_length_in": { "25": "600", "26": "500", "27": "500", "28": "500", "29": "400", "30": "400", "31": "400", "32": "340" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "50-54", "125": "50-54", "150": "45-49" }, "cells_by_length_in": { "25": "500", "26": "500", "27": "500", "28": "400", "29": "400", "30": "400", "31": "340", "32": "340" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "55-59", "125": "55-59", "150": "50-54" }, "cells_by_length_in": { "25": "500", "26": "500", "27": "400", "28": "400", "29": "400", "30": "340", "31": "340", "32": "340" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "60-64", "125": "60-64", "150": "55-59" }, "cells_by_length_in": { "25": "500", "26": "400", "27": "400", "28": "400", "29": "340", "30": "340", "31": "340", "32": "300" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "65-69", "125": "65-69", "150": "60-64" }, "cells_by_length_in": { "25": "400", "26": "400", "27": "400", "28": "340", "29": "340", "30": "340", "31": "300", "32": "300" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "70-74", "125": "70-74", "150": "65-69" }, "cells_by_length_in": { "25": "400", "26": "400", "27": "340", "28": "340", "29": "340", "30": "300", "31": "300", "32": "300" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "75-79", "125": "75-79", "150": "70-74" }, "cells_by_length_in": { "25": "400", "26": "340", "27": "340", "28": "340", "29": "300", "30": "300", "31": "300", "32": "250" } },
+          { "draw_weight_bands_by_point_weight_gr": { "100": "80-84", "125": "80-84", "150": "75-79" }, "cells_by_length_in": { "25": "340", "26": "340", "27": "300", "28": "300", "29": "250", "30": "250", "31": "250", "32": "250" } }
+        ]
+      },
+      {
+        "chart_id": "black_eagle_compound_2023",
+        "status": "fully_transcribed",
+        "confidence": "high",
+        "manufacturer": "Black Eagle",
+        "source_id": "black_eagle_spine_chart_page",
+        "chart_title": "Compound Bow Sizing Chart",
+        "bow_types": ["compound"],
+        "front_weight_classes_gr": ["100-125", "150+", "200+", "250+"],
+        "front_weight_definition": "Insert or outsert + point + weights",
+        "length_columns_in": [24, 25, 26, 27, 28, 29, 30, 31, 32, 33],
+        "advisory_notes": [
+          "These are based on a 100 gr. point.",
+          "If you use a 125 gr. point you may need to use a stiffer spine.",
+          "If you use a 85 gr. point you may need to use the weaker spine.",
+          "The UL 30-50 shafts are also available for use in this spine selection, depending on your setup.",
+          "General guidelines only."
+        ],
+        "rows": [
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "15-20", "150+": null, "200+": null, "250+": null }, "cells_by_length_in": { "24": "1000", "25": "1000", "26": "900", "27": "800", "28": "800", "29": "700", "30": "600", "31": "600", "32": "500", "33": "500" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "21-25", "150+": "15-20", "200+": null, "250+": null }, "cells_by_length_in": { "24": "1000", "25": "900", "26": "800", "27": "800", "28": "700", "29": "600", "30": "600", "31": "500", "32": "500", "33": "400" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "26-30", "150+": "21-25", "200+": "15-20", "250+": null }, "cells_by_length_in": { "24": "900", "25": "800", "26": "800", "27": "700", "28": "600", "29": "600", "30": "500", "31": "500", "32": "400", "33": "400" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "31-35", "150+": "26-30", "200+": "21-25", "250+": "15-20" }, "cells_by_length_in": { "24": "800", "25": "800", "26": "700", "27": "600", "28": "600", "29": "500", "30": "500", "31": "400", "32": "400", "33": "400" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "36-40", "150+": "31-35", "200+": "26-30", "250+": "21-25" }, "cells_by_length_in": { "24": "800", "25": "700", "26": "600", "27": "600", "28": "500", "29": "500", "30": "400", "31": "400", "32": "400", "33": "350" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "41-45", "150+": "36-40", "200+": "31-35", "250+": "26-30" }, "cells_by_length_in": { "24": "700", "25": "600", "26": "600", "27": "500", "28": "500", "29": "400", "30": "400", "31": "400", "32": "350", "33": "350" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "46-50", "150+": "41-45", "200+": "36-40", "250+": "31-35" }, "cells_by_length_in": { "24": "600", "25": "500", "26": "500", "27": "500", "28": "400", "29": "400", "30": "400", "31": "350", "32": "350", "33": "300" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "51-55", "150+": "46-50", "200+": "41-45", "250+": "36-40" }, "cells_by_length_in": { "24": "600", "25": "500", "26": "500", "27": "400", "28": "400", "29": "400", "30": "350", "31": "350", "32": "300", "33": "300" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "56-60", "150+": "51-55", "200+": "46-50", "250+": "41-45" }, "cells_by_length_in": { "24": "500", "25": "500", "26": "400", "27": "400", "28": "400", "29": "350", "30": "350", "31": "300", "32": "300", "33": "300" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "61-65", "150+": "56-60", "200+": "51-55", "250+": "46-50" }, "cells_by_length_in": { "24": "500", "25": "400", "26": "400", "27": "350", "28": "350", "29": "350", "30": "350", "31": "300", "32": "300", "33": "250" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "66-70", "150+": "61-65", "200+": "56-60", "250+": "51-55" }, "cells_by_length_in": { "24": "400", "25": "400", "26": "350", "27": "350", "28": "350", "29": "300", "30": "300", "31": "250", "32": "250", "33": "200" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "71-75", "150+": "66-70", "200+": "61-65", "250+": "56-60" }, "cells_by_length_in": { "24": "400", "25": "350", "26": "350", "27": "300", "28": "300", "29": "250", "30": "250", "31": "200", "32": "200", "33": "150" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "76-80", "150+": "71-75", "200+": "66-70", "250+": "61-65" }, "cells_by_length_in": { "24": "350", "25": "350", "26": "300", "27": "250", "28": "250", "29": "200", "30": "200", "31": "200", "32": "150", "33": "150" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "81-85", "150+": "76-80", "200+": "71-75", "250+": "66-70" }, "cells_by_length_in": { "24": "350", "25": "300", "26": "250", "27": "200", "28": "200", "29": "200", "30": "200", "31": "150", "32": "150", "33": "150" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": "86-90", "150+": "81-85", "200+": "76-80", "250+": "71-75" }, "cells_by_length_in": { "24": "300", "25": "250", "26": "200", "27": "200", "28": "200", "29": "150", "30": "150", "31": "150", "32": "150", "33": "150" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": null, "150+": "86-90", "200+": "81-85", "250+": "76-80" }, "cells_by_length_in": { "24": "250", "25": "200", "26": "200", "27": "200", "28": "150", "29": "150", "30": "150", "31": "150", "32": "150", "33": "150" } },
+          { "draw_weight_bands_by_front_weight_class": { "100-125": null, "150+": null, "200+": "86-90", "250+": "81-85" }, "cells_by_length_in": { "24": "200", "25": "200", "26": "150", "27": "150", "28": "150", "29": "150", "30": "150", "31": "150", "32": "150", "33": "150" } }
+        ]
+      },
+      {
+        "chart_id": "victory_recurve_2024",
+        "status": "fully_transcribed",
+        "confidence": "high",
+        "manufacturer": "Victory",
+        "source_id": "victory_arrow_guide_page",
+        "chart_title": "Recurve Spine Chart 2024",
+        "bow_types": ["recurve"],
+        "front_weight_classes_gr": ["150-175", "100-125"],
+        "length_columns_in": [23, 24, 25, 26, 27, 28, 29, 30, 31],
+        "advisory_notes": [
+          "Spine calculation based on 100-125 grain front.",
+          "General reference only."
+        ],
+        "rows": [
+          { "draw_weight_bands_by_front_weight_class": { "150-175": null, "100-125": "12-14" }, "cells_by_length_in": { "23": null, "24": null, "25": null, "26": "1200", "27": "1100", "28": "1000", "29": "900", "30": "900", "31": "800" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "12-14", "100-125": "14-16" }, "cells_by_length_in": { "23": "1200", "24": "1200", "25": "1200", "26": "1100", "27": "1000", "28": "900", "29": "800", "30": "800", "31": "800" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "14-16", "100-125": "16-18" }, "cells_by_length_in": { "23": "1200", "24": "1100", "25": "1100", "26": "1000", "27": "900", "28": "800", "29": "800", "30": "800", "31": "700" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "16-18", "100-125": "18-22" }, "cells_by_length_in": { "23": "1100", "24": "1000", "25": "1000", "26": "900", "27": "800", "28": "800", "29": "700", "30": "700", "31": "700" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "18-22", "100-125": "22-26" }, "cells_by_length_in": { "23": "1000", "24": "900", "25": "900", "26": "800", "27": "800", "28": "700", "29": "700", "30": "700", "31": "600" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "22-26", "100-125": "27-31" }, "cells_by_length_in": { "23": "900", "24": "800", "25": "800", "26": "800", "27": "700", "28": "700", "29": "600", "30": "600", "31": "600" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "27-31", "100-125": "32-36" }, "cells_by_length_in": { "23": "800", "24": "800", "25": "800", "26": "700", "27": "700", "28": "600", "29": "600", "30": "600", "31": "500" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "32-36", "100-125": "37-41" }, "cells_by_length_in": { "23": "800", "24": "700", "25": "700", "26": "700", "27": "600", "28": "600", "29": "500", "30": "500", "31": "500" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "37-41", "100-125": "42-46" }, "cells_by_length_in": { "23": "700", "24": "700", "25": "700", "26": "600", "27": "600", "28": "500", "29": "500", "30": "500", "31": "400" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "42-46", "100-125": "47-51" }, "cells_by_length_in": { "23": "700", "24": "600", "25": "600", "26": "600", "27": "500", "28": "500", "29": "400", "30": "400", "31": "400" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "47-51", "100-125": "52-56" }, "cells_by_length_in": { "23": "600", "24": "600", "25": "600", "26": "500", "27": "500", "28": "400", "29": "400", "30": "400", "31": "350" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "52-56", "100-125": "57-61" }, "cells_by_length_in": { "23": "600", "24": "500", "25": "500", "26": "500", "27": "400", "28": "400", "29": "350", "30": "350", "31": "350" } },
+          { "draw_weight_bands_by_front_weight_class": { "150-175": "57-61", "100-125": null }, "cells_by_length_in": { "23": "500", "24": "500", "25": "500", "26": "400", "27": "400", "28": "350", "29": "350", "30": "350", "31": "300" } }
+        ]
+      }
+    ],
+    "manifest_only_sources": [
+      {
+        "manifest_id": "easton_hunting_301055A",
+        "source_id": "easton_hunting_301055A_pdf",
+        "status": "manifest_only",
+        "reason": "Official PDF found and parseable, but not fully transcribed here to avoid accidental matrix errors.",
+        "important_rules": [
+          "Baseline: 301-340 FPS ATA, screw-in 100 grain points, release aid.",
+          "Fractional length note: 28.25 rounds down to 28; 28.5 rounds up to 29.",
+          "Points and inserts/outserts adjust effective bow weight."
+        ]
+      },
+      {
+        "manifest_id": "victory_compound_charts_2024",
+        "source_id": "victory_arrow_guide_page",
+        "status": "manifest_only",
+        "reason": "Official chart page and annual PDF confirmation found; keep as pinned source until full image/PDF matrix transcription is finished.",
+        "official_notes": [
+          "Below 300 FPS: deduct 5 lbs draw weight.",
+          "300-341 FPS: baseline draw weight.",
+          "341-351 FPS: add 5 lbs draw weight.",
+          "Above 351 FPS: add 10 lbs draw weight.",
+          "If draw length and poundage fall on the edge of a spine with a 100 or 125 grain point, choose the stiffer spine."
+        ],
+        "subtables_expected": [
+          "VF/RIP XV/RVL Spine Chart",
+          "HLR/VLR/VAP/VAP TKO/VAP SS/RIP/RIP TKO/RIP SS Spine Chart"
+        ]
+      },
+      {
+        "manifest_id": "carbon_express_chart_suite",
+        "source_id": "carbon_express_chart_hub",
+        "status": "manifest_only",
+        "reason": "Official hub found, but standalone image/PDF URLs not reliably exposed by the page text fetch.",
+        "subtables_expected": [
+          "Adjustable Weight Chart",
+          "Hunting Arrow Chart",
+          "Target Arrow Chart",
+          "Target Field Chart",
+          "Maxima Arrow Selection Chart",
+          "Light Recurve Arrow Chart",
+          "Recurve Arrow Selection Chart"
+        ],
+        "integration_note": "Adjustable Weight Chart should stay a rule layer, not a direct spine matrix."
+      },
+      {
+        "manifest_id": "black_eagle_traditional_2023",
+        "source_id": "black_eagle_spine_chart_page",
+        "status": "manifest_only",
+        "reason": "Official image found, but the matrix is more complex and should be transcribed from the original image in a dedicated pass."
+      },
+      {
+        "manifest_id": "skylon_target_chart",
+        "source_id": "skylon_target_chart_pdf",
+        "status": "manifest_only",
+        "reason": "Official PDF found; chart uses intermediate groups (Y1-Y4, A1-A13) that must be resolved against the same-page group mapping.",
+        "integration_note": "Keep group map and matrix together; do not flatten without preserving product-family mapping."
+      },
+      {
+        "manifest_id": "skylon_hunting_chart",
+        "source_id": "skylon_hunting_chart_pdf",
+        "status": "manifest_only",
+        "reason": "Official PDF found; chart uses intermediate groups (A1-A11) that must be resolved against the same-page group mapping."
+      },
+      {
+        "manifest_id": "three_rivers_spine_charts",
+        "source_id": "three_rivers_spine_charts_pdf",
+        "status": "manifest_only",
+        "reason": "Secondary source; excellent as a traditional/wood/carbon cross-check and for test-arrow selection, but not a manufacturer chart."
+      },
+      {
+        "manifest_id": "three_rivers_wood_chart",
+        "source_id": "three_rivers_wood_chart_pdf",
+        "status": "manifest_only",
+        "reason": "Secondary source; useful for wood-shaft normalization and the 5 pounds-per-inch stiffness rule."
+      },
+      {
+        "manifest_id": "three_rivers_dynamic_calculator",
+        "source_id": "three_rivers_dynamic_spine_calc",
+        "status": "manifest_only",
+        "reason": "Dynamic calculator, not a printed manufacturer table."
+      },
+      {
+        "manifest_id": "ashby_spine_calculator",
+        "source_id": "ashby_arrow_spine_calculator",
+        "status": "manifest_only",
+        "reason": "Useful as a simple A/B reference tool for test arrows; not a manufacturer chart."
+      },
+      {
+        "manifest_id": "stu_miller_mirror",
+        "source_id": "stu_miller_mirror_fr",
+        "status": "manifest_only",
+        "reason": "Community mirror to legacy dynamic spine spreadsheets; helpful for reverse-engineering variable sets."
+      },
+      {
+        "manifest_id": "arrow_builder_spreadsheet",
+        "source_id": "arrow_builder_spreadsheet_thread",
+        "status": "manifest_only",
+        "reason": "Community dataset of shafts/components. Valuable as a component/spec seed, not a spine chart."
+      }
+    ],
+    "supplemental_product_specs": [
+      {
+        "dataset_id": "pandarus_infinity_specs",
+        "source_id": "pandarus_infinity_page",
+        "manufacturer": "Pandarus",
+        "model": "Infinity",
+        "integration_role": "product_catalog_seed",
+        "notes": [
+          "Micro-diameter target/3D product line.",
+          "Wide spine range 350-1500."
+        ],
+        "rows": [
+          { "spine": "350", "inner_diameter_mm": 4.2, "outer_diameter_mm": 6.20, "gpi": 10.10, "recommended_point_gr": "120", "shaft_length_in": 32 },
+          { "spine": "400", "inner_diameter_mm": 4.2, "outer_diameter_mm": 6.12, "gpi": 9.50, "recommended_point_gr": "120", "shaft_length_in": 32 },
+          { "spine": "500", "inner_diameter_mm": 4.2, "outer_diameter_mm": 5.91, "gpi": 8.10, "recommended_point_gr": "100", "shaft_length_in": 32 },
+          { "spine": "600", "inner_diameter_mm": 4.2, "outer_diameter_mm": 5.75, "gpi": 7.20, "recommended_point_gr": "100", "shaft_length_in": 32 },
+          { "spine": "700", "inner_diameter_mm": 4.2, "outer_diameter_mm": 5.62, "gpi": 6.60, "recommended_point_gr": "100", "shaft_length_in": 32 },
+          { "spine": "800", "inner_diameter_mm": 4.2, "outer_diameter_mm": 5.55, "gpi": 6.15, "recommended_point_gr": "100", "shaft_length_in": 32 },
+          { "spine": "900", "inner_diameter_mm": 4.2, "outer_diameter_mm": 5.50, "gpi": 6.00, "recommended_point_gr": "80", "shaft_length_in": 30 },
+          { "spine": "1000", "inner_diameter_mm": 4.2, "outer_diameter_mm": 5.40, "gpi": 5.48, "recommended_point_gr": "80", "shaft_length_in": 30 },
+          { "spine": "1100", "inner_diameter_mm": 4.2, "outer_diameter_mm": 5.30, "gpi": 5.00, "recommended_point_gr": "80", "shaft_length_in": 28 },
+          { "spine": "1200", "inner_diameter_mm": 4.2, "outer_diameter_mm": 5.26, "gpi": 4.66, "recommended_point_gr": "80", "shaft_length_in": 28 },
+          { "spine": "1300", "inner_diameter_mm": 4.2, "outer_diameter_mm": 5.15, "gpi": 4.23, "recommended_point_gr": "80", "shaft_length_in": 28 },
+          { "spine": "1400", "inner_diameter_mm": 4.2, "outer_diameter_mm": 5.10, "gpi": 4.00, "recommended_point_gr": "80", "shaft_length_in": 28 },
+          { "spine": "1500", "inner_diameter_mm": 4.2, "outer_diameter_mm": 5.06, "gpi": 3.80, "recommended_point_gr": "80", "shaft_length_in": 28 }
+        ]
+      },
+      {
+        "dataset_id": "pandarus_elite_ca320_specs",
+        "source_id": "pandarus_elite_ca320_page",
+        "manufacturer": "Pandarus",
+        "model": "Elite CA320",
+        "integration_role": "product_catalog_seed",
+        "notes": [
+          "Compound bow shooting may allow tail-side trimming by 2 inches, but spine must be re-verified.",
+          "Hot melt is not recommended for CAC arrows."
+        ],
+        "rows": [
+          { "spine": "325", "outer_diameter_mm": 5.82, "gpi": 9.20, "recommended_point_gr": "100-120", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 32, "max_trim_in": "4" },
+          { "spine": "350", "outer_diameter_mm": 5.71, "gpi": 8.90, "recommended_point_gr": "100-120", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 32, "max_trim_in": "4" },
+          { "spine": "380", "outer_diameter_mm": 5.57, "gpi": 8.68, "recommended_point_gr": "100-120", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 32, "max_trim_in": "4" },
+          { "spine": "410", "outer_diameter_mm": 5.48, "gpi": 8.60, "recommended_point_gr": "100-120", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 32, "max_trim_in": "4" },
+          { "spine": "450", "outer_diameter_mm": 5.30, "gpi": 8.12, "recommended_point_gr": "100-120", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 32, "max_trim_in": "4" },
+          { "spine": "500", "outer_diameter_mm": 5.26, "gpi": 7.81, "recommended_point_gr": "100-120", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 32, "max_trim_in": "4" },
+          { "spine": "550", "outer_diameter_mm": 5.22, "gpi": 7.62, "recommended_point_gr": "100-120", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 32, "max_trim_in": "4" },
+          { "spine": "600", "outer_diameter_mm": 5.10, "gpi": 7.06, "recommended_point_gr": "100-120", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 30, "max_trim_in": "4" },
+          { "spine": "650", "outer_diameter_mm": 5.01, "gpi": 6.80, "recommended_point_gr": "100-120", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 30, "max_trim_in": "4" },
+          { "spine": "700", "outer_diameter_mm": 4.92, "gpi": 6.50, "recommended_point_gr": "100-120", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 29, "max_trim_in": "4" },
+          { "spine": "750", "outer_diameter_mm": 4.90, "gpi": 6.44, "recommended_point_gr": "100-120", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 29, "max_trim_in": "4" },
+          { "spine": "830", "outer_diameter_mm": 4.87, "gpi": 6.20, "recommended_point_gr": "80-100", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 29, "max_trim_in": "NOT LIMIT" },
+          { "spine": "900", "outer_diameter_mm": 4.70, "gpi": 6.06, "recommended_point_gr": "80-100", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 28, "max_trim_in": "NOT LIMIT" },
+          { "spine": "1000", "outer_diameter_mm": 4.67, "gpi": 5.50, "recommended_point_gr": "80-100", "point_od_mm": 4.80, "pin_od_mm": 4.50, "shaft_length_in": 28, "max_trim_in": "NOT LIMIT" }
+        ]
+      },
+      {
+        "dataset_id": "skylon_bentwood_specs",
+        "source_id": "skylon_target_chart_pdf",
+        "manufacturer": "Skylon",
+        "model": "Bentwood",
+        "integration_role": "product_catalog_seed",
+        "rows": [
+          { "spine": "800", "outer_diameter_mm": 7.00, "gpi": 5.40, "shaft_length_in": 33 },
+          { "spine": "700", "outer_diameter_mm": 7.10, "gpi": 5.70, "shaft_length_in": 33 },
+          { "spine": "600", "outer_diameter_mm": 7.17, "gpi": 5.87, "shaft_length_in": 33 },
+          { "spine": "500", "outer_diameter_mm": 7.36, "gpi": 7.25, "shaft_length_in": 33 },
+          { "spine": "400", "outer_diameter_mm": 7.40, "gpi": 7.73, "shaft_length_in": 33 },
+          { "spine": "350", "outer_diameter_mm": 7.43, "gpi": 7.89, "shaft_length_in": 33 },
+          { "spine": "300", "outer_diameter_mm": 7.70, "gpi": 9.68, "shaft_length_in": 33 }
+        ]
+      },
+      {
+        "dataset_id": "skylon_preminens_specs",
+        "source_id": "skylon_target_chart_pdf",
+        "manufacturer": "Skylon",
+        "model": "Preminens",
+        "integration_role": "product_catalog_seed",
+        "rows": [
+          { "spine": "650", "outer_diameter_mm": 4.73, "gpi": 5.83, "shaft_length_in": 31, "recommended_point_gr": "80-90-100" },
+          { "spine": "600", "outer_diameter_mm": 4.78, "gpi": 6.10, "shaft_length_in": 32, "recommended_point_gr": "100-110-120" },
+          { "spine": "550", "outer_diameter_mm": 4.84, "gpi": 6.50, "shaft_length_in": 32, "recommended_point_gr": "100-110-120" },
+          { "spine": "500", "outer_diameter_mm": 4.90, "gpi": 6.90, "shaft_length_in": 32, "recommended_point_gr": "100-110-120" },
+          { "spine": "450", "outer_diameter_mm": 5.04, "gpi": 7.42, "shaft_length_in": 32, "recommended_point_gr": "100-110-120" },
+          { "spine": "400", "outer_diameter_mm": 5.17, "gpi": 7.93, "shaft_length_in": 32, "recommended_point_gr": "100-110-120" },
+          { "spine": "350", "outer_diameter_mm": 5.25, "gpi": 8.47, "shaft_length_in": 32, "recommended_point_gr": "100-110-120" }
+        ]
+      }
+    ]
+  }
+  
