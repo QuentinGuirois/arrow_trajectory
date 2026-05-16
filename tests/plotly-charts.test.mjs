@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
@@ -29,4 +29,17 @@ test('3D view keeps physical proportions instead of forcing a cube', async () =>
   assert.doesNotMatch(source, /aspectratio:\s*\{\s*x:\s*3\.8,\s*y:\s*0\.9,\s*z:\s*1\.15\s*\}/);
   assert.match(source, /showline: true/);
   assert.match(html, /3D = centre de masse de la flèche\./);
+});
+
+test('3D scene stays transparent without opaque axis planes or oversized dispersion markers', async () => {
+  const source = await readFile(new URL('../plotly-charts.js', import.meta.url), 'utf8');
+
+  assert.match(source, /paper_bgcolor: 'rgba\(0,0,0,0\)'/);
+  assert.match(source, /plot_bgcolor: 'rgba\(0,0,0,0\)'/);
+  assert.match(source, /bgcolor: 'rgba\(0,0,0,0\)'/);
+  assert.match(source, /showbackground: false/);
+  assert.match(source, /backgroundcolor: 'rgba\(0,0,0,0\)'/);
+  assert.match(source, /opacity: 0\.18/);
+  assert.match(source, /Math\.min\(10, Math\.max\(2, p\.dispersionRadiusCm\)\)/);
+  assert.doesNotMatch(source, /surfaceaxis|type:\s*'mesh3d'|type:\s*'surface'/);
 });

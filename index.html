@@ -94,8 +94,9 @@
                       <input type="number" id="fps" value="190" min="80" max="420" step="1" class="input-field w-full py-3 px-4 rounded-lg">
                     </div>
                     <div>
-                      <label class="field-label">Masse totale flèche (g)</label>
-                      <input type="number" id="poidsGr" value="25" min="10" max="60" step="0.1" class="input-field w-full py-3 px-4 rounded-lg">
+                      <label class="field-label">Masse flèche (grains)</label>
+                      <input type="number" id="massGrains" value="386" min="150" max="1000" step="1" class="input-field w-full py-3 px-4 rounded-lg">
+                      <input type="hidden" id="poidsGr" value="25">
                     </div>
                     <div>
                       <label class="field-label">Diamètre (mm)</label>
@@ -336,8 +337,7 @@
                   <button class="text-gray-400 hover:text-cyan-300 transition" id="tabHoldover">Compensation</button>
                   <button class="text-gray-400 hover:text-cyan-300 transition" id="tabDrift">Dérive</button>
                   <button class="text-gray-400 hover:text-cyan-300 transition" id="tab3d">3D</button>
-                  <button class="text-gray-400 hover:text-cyan-300 transition advanced-tab" id="tabTuning">Tuning</button>
-                  <button class="text-gray-400 hover:text-cyan-300 transition advanced-tab" id="tabAoa">Angle</button>
+                  <button class="text-gray-400 hover:text-cyan-300 transition advanced-tab" id="tabTuning">Oscillations</button>
                 </div>
               </div>
               <div class="chart-container bg-gray-900/50 rounded-xl border border-gray-700 relative" id="chart">

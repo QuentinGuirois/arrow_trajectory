@@ -4,6 +4,7 @@
 
 import { gramsToGrains, grainsToGrams, inchesToMeters, clamp } from './units.js';
 import { getSpineQualitativeTrends } from './spine-trends.js';
+import { evaluateFoc } from './diagnostic-indicators.js';
 
 const PROFILE_FACTOR = { low: 0.88, medium: 1, high: 1.14 };
 
@@ -30,6 +31,7 @@ export function buildArrow(params) {
     vaneMassGrains,
     componentMassGrains
   });
+  const focEvaluation = evaluateFoc(foc.percent, params.bowType);
 
   return {
     totalMassGr,
@@ -45,10 +47,11 @@ export function buildArrow(params) {
     frontalAreaM2: Math.PI * Math.pow(params.diameter / 2, 2),
     focPercent: foc.percent,
     focSource: foc.source,
+    focEvaluation,
     spineStatic: params.spineStatic,
     qualitativeTrends: getSpineQualitativeTrends(params),
-    stabilityLabel: calculateAeroStabilityLabel(params, foc.percent),
-    warnings: buildWarnings(params, totalMassGr, foc.percent, vaneMassGrains),
+    stabilityLabel: calculateAeroStabilityLabel(params, focEvaluation),
+    warnings: buildWarnings(params, totalMassGr, focEvaluation, vaneMassGrains),
     vaneDragFactor: calculateVaneDragFactor(params),
     spinStabilization: calculateSpinStabilization(params)
   };
@@ -109,21 +112,28 @@ function calculateSpinStabilization(params) {
   return orientation * angle * calculateVaneDragFactor(params);
 }
 
-function calculateAeroStabilityLabel(params, focPercent) {
-  if (!Number.isFinite(focPercent)) return 'donnée non disponible';
-  if (focPercent < 7) return 'FOC bas: vérifier au tir';
-  if (focPercent > 18) return 'FOC élevé: vérifier trajectoire et groupement';
+function calculateAeroStabilityLabel(params, focEvaluation) {
+  if (focEvaluation.status === 'unknown') return 'donnée non disponible';
+  if (focEvaluation.status === 'bad' && focEvaluation.note === 'Hors domaine réaliste.') return 'FOC hors domaine réaliste';
+  if (focEvaluation.value < 7) return 'FOC bas: vérifier au tir';
+  if (focEvaluation.value > 18) return 'FOC élevé: vérifier trajectoire et groupement';
   if (params.vaneProfile === 'high' || params.fletchingOrientation === 'helical') return 'stabilisation empennage élevée';
   return 'stabilisation empennage standard';
 }
 
-function buildWarnings(params, totalMassGr, focPercent, vaneMassGrains) {
+function buildWarnings(params, totalMassGr, focEvaluation, vaneMassGrains) {
   const warnings = [];
   if (params.massMode === 'components' && params.shaftGpi <= 0) warnings.push('GPI manquant: masse par composants indisponible.');
   if (params.massMode === 'components' && vaneMassGrains === null) warnings.push('Poids total d’empennage non renseigné: il n’est pas inclus dans la masse par composants.');
   if (totalMassGr <= 0) warnings.push('Masse totale invalide.');
-  if (Number.isFinite(focPercent) && focPercent < 7) warnings.push('FOC bas: tendance possible à une stabilité de pointe plus faible.');
-  if (Number.isFinite(focPercent) && focPercent > 18) warnings.push('FOC élevé: trajectoire et réglage à valider au pas de tir.');
+  if (focEvaluation.status === 'bad' && focEvaluation.note === 'Hors domaine réaliste.') {
+    warnings.push('FOC hors domaine réaliste: mesure ou saisie à vérifier.');
+  } else if (Number.isFinite(focEvaluation.value) && focEvaluation.value < 7) {
+    warnings.push('FOC bas: tendance possible à une stabilité de pointe plus faible.');
+  }
+  if (Number.isFinite(focEvaluation.value) && focEvaluation.value > 18 && focEvaluation.value <= 35) {
+    warnings.push('FOC élevé: trajectoire et réglage à valider au pas de tir.');
+  }
   return warnings;
 }
 

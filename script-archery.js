@@ -8,13 +8,14 @@ import { computeTuningDiagnostics } from './tuning-diagnostics.js';
 import { renderAllCharts, purgeCharts, showTab, resizeCharts } from './plotly-charts.js';
 import { decodeShare, encodeShare, loadSetups, saveSetups } from './share-schema.js';
 import { resolveSpineRecommendation } from './spine-recommendation.js';
-import { compareCurrentSpineToRange } from './spine-evaluation.js';
+import { compareCurrentSpineToRange, computeSpineMismatch } from './spine-evaluation.js';
 import { deriveInternalReleaseType, normalizeBowType } from './bow-utils.js';
 import { formatPrintedSpineLabel } from './spine-display.js';
 import { resolveEffectiveDrawWeight } from './draw-weight.js';
 import { normalizeSimulationParams } from './simulation-params.js';
 import { debounce } from './util.js';
-import { cmToMeters, formatNumber, mmToMeters, readBool, readNumber } from './units.js';
+import { buildStatsCardsModel, getIndicatorStyle } from './diagnostic-indicators.js';
+import { cmToMeters, formatNumber, gramsToGrains, grainsToGrams, mmToMeters, readBool, readNumber } from './units.js';
 
 const trajWorker = new Worker('./trajectory.worker-archery.js', { type: 'module' });
 const $ = id => document.getElementById(id);
@@ -65,7 +66,7 @@ const SPINE_RELEVANT_FIELD_IDS = new Set([
   'arrowLengthIn',
   'pointWeightGrains',
   'insertWeightGrains',
-  'poidsGr',
+  'massGrains',
   'massMode',
   'spineStatic',
   'spineReference',
@@ -85,6 +86,8 @@ function getFormValues() {
   Object.entries(numericFields).forEach(([id, fallback]) => {
     params[id] = readNumber(id, fallback);
   });
+  params.massGrains = readNumber('massGrains', gramsToGrains(params.poidsGr));
+  params.poidsGr = grainsToGrams(params.massGrains);
   params.vaneWeightTotalGrains = readOptionalNumber('vaneWeightTotalGrains');
   selectFields.forEach(id => {
     if ($(id)) params[id] = $(id).value;
@@ -108,6 +111,12 @@ function applyParamsToForm(params) {
     if (id === 'scopeOffset' && Math.abs(value) < 1) value *= 100;
     $(id).value = value;
   });
+  if ($('massGrains')) {
+    const visibleMassGrains = Number.isFinite(merged.massGrains)
+      ? merged.massGrains
+      : gramsToGrains(Number.isFinite(merged.poidsGr) ? merged.poidsGr : DEFAULT_PARAMS.poidsGr);
+    $('massGrains').value = Math.round(visibleMassGrains);
+  }
   if ($('vaneWeightTotalGrains')) {
     $('vaneWeightTotalGrains').value = Number.isFinite(merged.vaneWeightTotalGrains)
       ? merged.vaneWeightTotalGrains
@@ -139,9 +148,9 @@ function updateConditionalFields() {
   document.querySelectorAll('.advanced-tab').forEach(el => el.classList.toggle('advanced-hidden', !advanced));
   document.querySelectorAll('.component-only').forEach(el => el.classList.toggle('advanced-hidden', !(advanced && componentsMode)));
   document.querySelectorAll('.mass-total-note').forEach(el => el.classList.toggle('advanced-hidden', !(advanced && !componentsMode)));
-  if ($('poidsGr')) $('poidsGr').disabled = componentsMode;
+  if ($('massGrains')) $('massGrains').disabled = componentsMode;
 
-  if (!advanced && ['tuningChart', 'aoaChart'].includes(appState.activeTab)) {
+  if ((!advanced && appState.activeTab === 'tuningChart') || appState.activeTab === 'aoaChart') {
     appState.activeTab = 'trajectory2D';
     showTab('trajectory2D');
   }
@@ -165,15 +174,12 @@ function updateEnergyDisplay(arrow = buildArrow(getFormValues()), launch = resol
 
 function updateSpineRecommendation(params = getFormValues(), arrow = buildArrow(params)) {
   const recommendation = resolveSpineRecommendation(params);
-  const comparison = compareCurrentSpineToRange(
-    params.spineStatic,
-    recommendation.rangeMin,
-    recommendation.rangeMax
-  );
+  const comparison = buildSpineComparison(params, recommendation);
   appState.currentSpineRecommendation = recommendation;
   const tuning = computeTuningDiagnostics({ ...params, spineRecommendation: recommendation }, []);
   renderArrowBuilderPanel(arrow, params, recommendation, comparison);
   renderDiagnosticsPanel(arrow, tuning);
+  updateStatsPanel(appState.lastResult?.stats, arrow, tuning, recommendation, comparison, params);
   return { recommendation, comparison, tuning };
 }
 
@@ -208,6 +214,9 @@ function renderArrowBuilderPanel(arrow, params, recommendation, comparison) {
 
 function formatFocSummary(arrow) {
   if (!Number.isFinite(arrow.focPercent)) return 'non disponible';
+  if (arrow.focEvaluation?.note === 'Hors domaine réaliste.') {
+    return `${formatNumber(arrow.focPercent, 1)}% (hors domaine réaliste)`;
+  }
   const sourceLabel = arrow.focSource === 'measured'
     ? 'mesur&eacute;'
     : arrow.focSource === 'estimated'
@@ -228,6 +237,21 @@ function buildArrowSpineSummary(params, recommendation, comparison) {
     return buildGeneralizedSpineSummary(params, recommendation, comparison);
   }
   return buildManufacturerSpineSummary(params, recommendation, comparison);
+}
+
+function buildSpineComparison(params, recommendation) {
+  const comparison = compareCurrentSpineToRange(
+    params.spineStatic,
+    recommendation.rangeMin,
+    recommendation.rangeMax
+  );
+  const mismatch = computeSpineMismatch(
+    params.spineStatic,
+    recommendation.suggestedSpine,
+    recommendation.rangeMin,
+    recommendation.rangeMax
+  );
+  return { ...comparison, severity: mismatch.severity };
 }
 
 function buildGeneralizedSpineSummary(params, recommendation, comparison) {
@@ -330,23 +354,40 @@ function formatOscillatorSummary(channel) {
   return `${formatNumber(o.A0Cm, 2)} cm ; λ ${formatNumber(o.lambdaM, 1)} m ; longueur d’onde ${formatNumber(o.wavelengthM, 1)} m.`;
 }
 
-function updateStatsPanel(stats = {}) {
-  const cards = [
-    ['PORTÉE', `${formatNumber(stats.portée || 0, 1)} m`, 'text-cyan-400'],
-    ['HAUTEUR MAX', `${formatNumber(stats.hauteur || 0, 2)} m`, 'text-green-400'],
-    ['TEMPS VOL', `${formatNumber(stats.tvol || 0, 2)} s`, 'text-purple-400'],
-    ['VITESSE IMPACT', `${formatNumber(stats.vfinal || 0, 1)} fps`, 'text-yellow-400'],
-    ['ÉNERGIE IMPACT', `${formatNumber(stats.energyImpact || 0, 1)} J`, 'text-cyan-400'],
-    ['MOMENTUM', `${formatNumber(stats.momentumImpact || 0, 2)} kg·m/s`, 'text-green-400'],
-    ['DÉRIVE IMPACT', `${formatNumber(stats.driftImpactCm || 0, 1)} cm`, 'text-purple-400'],
-    ['ANGLE IMPACT', `${formatNumber(stats.impactAngleDeg || 0, 1)}°`, 'text-yellow-400']
-  ];
-  $('statsPanel').innerHTML = cards.map(([label, value, color]) => `
-    <div class="card-glass p-4 text-center">
-      <div class="${color} text-sm">${label}</div>
-      <div class="text-xl font-bold mt-1">${value}</div>
+function updateStatsPanel(
+  stats = {},
+  arrow = buildArrow(getFormValues()),
+  tuning = computeTuningDiagnostics(getFormValues(), []),
+  recommendation = appState.currentSpineRecommendation || resolveSpineRecommendation(getFormValues()),
+  comparison = buildSpineComparison(getFormValues(), recommendation),
+  params = getFormValues()
+) {
+  const model = buildStatsCardsModel({
+    stats,
+    arrow,
+    tuning,
+    comparison,
+    bowType: params.bowType
+  });
+  const ballisticMarkup = model.ballisticCards.map(card => `
+    <div class="card-glass stat-card p-4 text-center">
+      <div class="text-cyan-300 text-sm">${card.label}</div>
+      <div class="text-xl font-bold mt-1">${card.value}</div>
+      ${card.hint ? `<div class="text-xs text-gray-400 mt-1">${card.hint}</div>` : ''}
     </div>
   `).join('');
+  const diagnosticMarkup = model.diagnosticCards.map(card => {
+    const style = getIndicatorStyle(card.status);
+    return `
+      <div class="card-glass stat-card p-4 text-center border ${style.borderClass} ${style.glowClass}">
+        <div class="${style.textClass} text-sm">${card.label}</div>
+        <div class="text-xl font-bold mt-1">${card.value}</div>
+        <div class="text-xs text-gray-400 mt-1">${card.hint}</div>
+        ${card.sublabel ? `<div class="${style.textClass} text-xs mt-1">${card.sublabel}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+  $('statsPanel').innerHTML = ballisticMarkup + diagnosticMarkup;
 }
 
 function curvesForDisplay() {
@@ -371,7 +412,7 @@ function updateSavedCurves() {
       <div class="flex justify-between items-center gap-3">
         <div>
           <div class="font-bold" style="color:${curve.color}">${curve.label}</div>
-          <div class="text-sm text-gray-400">${formatNumber(curve.params.fps, 0)} fps, ${formatNumber(curve.arrow.totalMassGr, 1)} g</div>
+          <div class="text-sm text-gray-400">${formatNumber(curve.params.fps, 0)} fps, ${formatNumber(curve.arrow.totalMassGrains, 0)} gr / ${formatNumber(curve.arrow.totalMassGr, 1)} g</div>
         </div>
         <div class="flex space-x-2">
           <button class="p-2 text-cyan-400 hover:text-cyan-300" data-index="${i}" data-action="load" title="Charger"><i class="fas fa-eye"></i></button>
@@ -395,7 +436,9 @@ function updateSavedCurves() {
       const curve = appState.savedCurves[parseInt(btn.dataset.index, 10)];
       applyParamsToForm(curve.params);
       appState.lastResult = curve;
-      updateStatsPanel(curve.stats);
+      const recommendation = resolveSpineRecommendation(curve.params);
+      const comparison = buildSpineComparison(curve.params, recommendation);
+      updateStatsPanel(curve.stats, curve.arrow, curve.tuning, recommendation, comparison, curve.params);
       renderSightTable(curve);
       renderAllCharts(curvesForDisplay());
     };
@@ -467,7 +510,8 @@ function runSim() {
       simulation: e.data.simulation
     };
     appState.lastResult = curve;
-    updateStatsPanel(curve.stats);
+    const comparison = buildSpineComparison(params, spineRecommendation);
+    updateStatsPanel(curve.stats, curve.arrow, curve.tuning, spineRecommendation, comparison, params);
     renderDiagnosticsPanel(curve.arrow, curve.tuning);
     renderSightTable(curve);
     renderAllCharts(curvesForDisplay());
@@ -522,7 +566,9 @@ function loadConfigFromUrl() {
   updateConditionalFields();
 
   if (appState.lastResult && isSameSetup(appState.lastResult, { params: getFormValues() })) {
-    updateStatsPanel(appState.lastResult.stats);
+    const recommendation = resolveSpineRecommendation(appState.lastResult.params);
+    const comparison = buildSpineComparison(appState.lastResult.params, recommendation);
+    updateStatsPanel(appState.lastResult.stats, appState.lastResult.arrow, appState.lastResult.tuning, recommendation, comparison, appState.lastResult.params);
     renderSightTable(appState.lastResult);
     renderAllCharts(curvesForDisplay());
     showTab(appState.activeTab);
@@ -586,7 +632,9 @@ function bindEvents() {
     tabAoa: 'aoaChart'
   };
   Object.entries(tabs).forEach(([buttonId, tabId]) => {
-    $(buttonId).onclick = () => {
+    const button = $(buttonId);
+    if (!button) return;
+    button.onclick = () => {
       appState.activeTab = tabId;
       showTab(tabId);
       resizeCharts();
@@ -620,7 +668,9 @@ function bootstrap() {
     const last = appState.savedCurves[appState.savedCurves.length - 1];
     if (last) {
       appState.lastResult = last;
-      updateStatsPanel(last.stats);
+      const recommendation = resolveSpineRecommendation(last.params);
+      const comparison = buildSpineComparison(last.params, recommendation);
+      updateStatsPanel(last.stats, last.arrow, last.tuning, recommendation, comparison, last.params);
       renderSightTable(last);
     }
     renderAllCharts(curvesForDisplay());

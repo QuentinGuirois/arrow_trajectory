@@ -59,10 +59,9 @@ export function computeAdvancedCd(params, arrow, relativeSpeed, aoaRad, airDensi
 export function buildInitialVelocity(params, launch) {
   const speed = fpsToMetersPerSecond(launch.fps);
   const pitch = degreesToRadians(params.angleDeg);
-  const lateralMps = params.releaseErrorLateralMm * 0.015;
   return {
     x: speed * Math.cos(pitch),
-    y: lateralMps,
-    z: speed * Math.sin(pitch) + params.releaseErrorVerticalMm * 0.015
+    y: 0,
+    z: speed * Math.sin(pitch)
   };
 }

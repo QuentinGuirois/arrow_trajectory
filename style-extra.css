@@ -252,3 +252,25 @@
 .chart-container > div {
   width: 100%;
 }
+
+.stat-card {
+  min-height: 108px;
+}
+
+.indicator-bad { color: #fb7185; }
+.indicator-warning { color: #fb923c; }
+.indicator-medium { color: #fde047; }
+.indicator-good { color: #4ade80; }
+.indicator-unknown { color: #94a3b8; }
+
+.indicator-border-bad { border-color: rgba(251, 113, 133, 0.45); }
+.indicator-border-warning { border-color: rgba(251, 146, 60, 0.45); }
+.indicator-border-medium { border-color: rgba(253, 224, 71, 0.45); }
+.indicator-border-good { border-color: rgba(74, 222, 128, 0.45); }
+.indicator-border-unknown { border-color: rgba(148, 163, 184, 0.35); }
+
+.indicator-glow-bad { box-shadow: 0 0 18px rgba(251, 113, 133, 0.12); }
+.indicator-glow-warning { box-shadow: 0 0 18px rgba(251, 146, 60, 0.12); }
+.indicator-glow-medium { box-shadow: 0 0 18px rgba(253, 224, 71, 0.1); }
+.indicator-glow-good { box-shadow: 0 0 18px rgba(74, 222, 128, 0.12); }
+.indicator-glow-unknown { box-shadow: 0 0 18px rgba(148, 163, 184, 0.08); }

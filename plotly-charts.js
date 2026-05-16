@@ -128,8 +128,8 @@ function axis3d(title) {
   return {
     title,
     color: '#fff',
-    showbackground: true,
-    backgroundcolor: 'rgba(255,255,255,0.03)',
+    showbackground: false,
+    backgroundcolor: 'rgba(0,0,0,0)',
     showgrid: true,
     gridcolor: 'rgba(255,255,255,0.12)',
     zeroline: true,
@@ -195,8 +195,9 @@ function traceDispersion3d(points, color, label) {
     name: label,
     marker: {
       color,
-      opacity: 0.25,
-      size: sampled.map(p => Math.max(2, p.dispersionRadiusCm))
+      opacity: 0.18,
+      size: sampled.map(p => Math.min(10, Math.max(2, p.dispersionRadiusCm))),
+      line: { width: 0 }
     },
     hoverinfo: 'skip'
   };

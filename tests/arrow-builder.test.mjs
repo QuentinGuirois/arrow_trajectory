@@ -1,4 +1,4 @@
-import test from 'node:test';
+﻿import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 
@@ -63,6 +63,16 @@ test('FOC is measured when a balance point is provided', () => {
   assert.equal(arrow.focPercent, 10);
 });
 
+test('FOC measured from the nock matches the standard formula', () => {
+  const arrow = buildArrow({
+    ...DEFAULT_PARAMS,
+    arrowLengthIn: 26,
+    balancePointIn: 14
+  });
+
+  assert.ok(Math.abs(arrow.focPercent - 3.8461538461538463) < 1e-12);
+});
+
 test('FOC is estimated only when component distribution is explicit', () => {
   const estimated = buildArrow({
     ...DEFAULT_PARAMS,
@@ -93,6 +103,6 @@ test('advanced arrow UI asks for explicit total vane weight', async () => {
 test('component mode does not overwrite the entered total-mass field', async () => {
   const source = await readFile(new URL('../script-archery.js', import.meta.url), 'utf8');
 
-  assert.match(source, /\$\('poidsGr'\)\.disabled = componentsMode/);
+  assert.match(source, /\$\('massGrains'\)\.disabled = componentsMode/);
   assert.doesNotMatch(source, /\$\('poidsGr'\)\.value = formatNumber\(arrow\.totalMassGr/);
 });
