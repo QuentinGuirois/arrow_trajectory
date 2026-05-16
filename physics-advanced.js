@@ -1,7 +1,7 @@
 // physics-advanced.js
 // Constantes et sous-modèles physiques avancés. Les coefficients aérodynamiques sont documentés comme simplifiés.
 
-import { fpsToMetersPerSecond, kmhToMps, clamp } from './units.js';
+import { fpsToMetersPerSecond, kmhToMps, clamp, degreesToRadians } from './units.js';
 
 export const PHYSICS_CONSTANTS = {
   gravity: 9.80665,
@@ -22,7 +22,7 @@ export function calculateAirDensityAdvanced(params) {
 
 export function windVector(params) {
   const speed = kmhToMps(params.windSpeedKmh);
-  const rad = params.windDirectionDeg * Math.PI / 180;
+  const rad = degreesToRadians(params.windDirectionDeg);
   const gust = 1 + clamp(params.gustPercent, 0, 80) / 200;
   return {
     x: -Math.cos(rad) * speed * gust,
@@ -49,7 +49,7 @@ export function computeAdvancedCd(params, arrow, relativeSpeed, aoaRad, airDensi
 
 export function buildInitialVelocity(params, launch) {
   const speed = fpsToMetersPerSecond(launch.fps);
-  const pitch = params.angleDeg * Math.PI / 180;
+  const pitch = degreesToRadians(params.angleDeg);
   const lateralMps = params.releaseErrorLateralMm * 0.015;
   return {
     x: speed * Math.cos(pitch),

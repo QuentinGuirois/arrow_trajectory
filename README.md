@@ -73,6 +73,7 @@ L’étude scientifique locale documente les limites du spine statique et les pa
 - `script-archery.js` : orchestration UI, recalcul debouncé, Worker, partage et sauvegarde.
 - `state.js` : valeurs par défaut, presets indicatifs, état applicatif.
 - `units.js` : conversions et helpers numériques.
+- `simulation-params.js` : contrat physique normalisé et adaptateur depuis les champs historiques.
 - `arrow-builder.js` : masse, FOC, surface frontale, données de spine sans recommandation inventée.
 - `spine-tables.js` : registre séparé des sources fabricant et rows vérifiées.
 - `spine-lookup.js` : recherche stricte + lookup utilisateur, sans extrapolation.
@@ -99,6 +100,47 @@ Le graphe 3D Plotly affiche la trajectoire du centre de masse :
 - Z = hauteur en mètres.
 
 Le tuning ne déforme pas la trajectoire physique. Porpoising, fishtailing et AoA sont des diagnostics séparés.
+
+## Contrat physique normalisé
+
+Les ids HTML historiques restent inchangés (`fps`, `poidsGr`, `diameter`, `scopeOffset`, etc.), mais le simulateur construit maintenant un contrat SI explicite avant l'appel au Worker :
+
+```js
+{
+  launch: {
+    speedMps,
+    angleRad,
+    heightM,
+    sightOffsetM,
+    sightAngleRad
+  },
+  arrow: {
+    massKg,
+    massGrains,
+    diameterM,
+    lengthM,
+    frontalAreaM2
+  },
+  atmosphere: {
+    temperatureC,
+    pressurePa,
+    densityKgM3,
+    dynamicViscosityPaS
+  },
+  wind: {
+    speedMps,
+    directionDeg,
+    vectorMps: { x, y, z }
+  },
+  raw: {
+    fps,
+    poidsGr,
+    diameterMm
+  }
+}
+```
+
+`fps` reste la vérité chrono. `simulation-params.js` accepte encore les conventions legacy utiles à la transition (diamètre en mm ou m, offset de visée en cm ou m) puis expose des unités physiques explicites. Le message Worker transporte temporairement les deux couches : `params` pour la compatibilité avec le moteur actuel, `simulation` pour la migration vers une architecture 3D plus nette.
 
 ## Limites
 

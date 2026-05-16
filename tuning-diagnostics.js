@@ -19,9 +19,11 @@ export function computeDynamicTuningInputs(params = {}, spineRecommendation = {}
     spineRecommendation.rangeMax
   );
   const frontMassGrains = finiteOr(params.pointWeightGrains, 100) + finiteOr(params.insertWeightGrains, 0);
+  const totalMassGrains = resolveTotalMassGrains(params, frontMassGrains);
   const focPercent = Number.isFinite(params.focPercent)
     ? params.focPercent
     : estimateFocPercent(params, frontMassGrains);
+  const massInertiaFactor = normalizeAround(totalMassGrains, 386, 260);
   const frontMassFactor = normalizeAround(frontMassGrains, 112, 120);
   const focFactor = normalizeAround(focPercent, 11, 12);
   const arrowLengthFactor = normalizeAround(finiteOr(params.arrowLengthIn, 29), 29, 6);
@@ -34,7 +36,8 @@ export function computeDynamicTuningInputs(params = {}, spineRecommendation = {}
     staticSpineFactor * 0.38 +
     frontMassFactor * 0.24 +
     arrowLengthFactor * 0.22 +
-    effectiveDrawWeightFactor * 0.18,
+    effectiveDrawWeightFactor * 0.18 -
+    massInertiaFactor * 0.08,
     0,
     1
   );
@@ -47,7 +50,8 @@ export function computeDynamicTuningInputs(params = {}, spineRecommendation = {}
     frontMassFactor * 0.12 +
     focFactor * 0.12 +
     arrowLengthFactor * 0.08 +
-    effectiveDrawWeightFactor * 0.08,
+    effectiveDrawWeightFactor * 0.08 -
+    massInertiaFactor * 0.08,
     0,
     1
   );
@@ -58,13 +62,15 @@ export function computeDynamicTuningInputs(params = {}, spineRecommendation = {}
     spineMismatchSeverity * 0.42 +
     frontMassFactor * 0.12 +
     arrowLengthFactor * 0.12 +
-    effectiveDrawWeightFactor * 0.08,
+    effectiveDrawWeightFactor * 0.08 -
+    massInertiaFactor * 0.1,
     0,
     1
   );
 
   return {
     spineMismatchSeverity,
+    massInertiaFactor,
     frontMassFactor,
     focFactor,
     arrowLengthFactor,
@@ -101,7 +107,8 @@ export function calculateTuningModel(params, arrow) {
     dynamicInputs.focFactor * 0.24 +
     dynamicInputs.arrowLengthFactor * 0.2 +
     dynamicInputs.effectiveDrawWeightFactor * 0.18 +
-    dynamicInputs.spineMismatchSeverity * 0.3,
+    dynamicInputs.spineMismatchSeverity * 0.3 -
+    dynamicInputs.massInertiaFactor * 0.22,
     0.2,
     5.2
   );
@@ -115,7 +122,8 @@ export function calculateTuningModel(params, arrow) {
     dynamicInputs.spineMismatchSeverity * 1.35 +
     dynamicInputs.frontMassFactor * mismatchDirectionalBoost(spineMismatch.status, 'soft') +
     dynamicInputs.arrowLengthFactor * 0.28 +
-    dynamicInputs.effectiveDrawWeightFactor * 0.24,
+    dynamicInputs.effectiveDrawWeightFactor * 0.24 -
+    dynamicInputs.massInertiaFactor * 0.18,
     0.2,
     6
   );
@@ -123,10 +131,12 @@ export function calculateTuningModel(params, arrow) {
   const verticalFrequencyHz = 12.2 +
     finiteOr(dynamicInputs.effectiveDrawWeightFactor, 0) * 3.2 -
     finiteOr(dynamicInputs.frontMassFactor, 0) * 1.4 -
-    finiteOr(dynamicInputs.arrowLengthFactor, 0) * 0.8;
+    finiteOr(dynamicInputs.arrowLengthFactor, 0) * 0.8 -
+    finiteOr(dynamicInputs.massInertiaFactor, 0) * 0.9;
   const lateralFrequencyHz = 10.8 +
     finiteOr(dynamicInputs.stiffnessProxy, 0) * 2.4 -
-    finiteOr(dynamicInputs.arrowLengthFactor, 0) * 1.1;
+    finiteOr(dynamicInputs.arrowLengthFactor, 0) * 1.1 -
+    finiteOr(dynamicInputs.massInertiaFactor, 0) * 0.7;
   const verticalDamping = clamp(1.8 + spinDamping * 0.8 + arrow.vaneDragFactor * 0.35, 1.3, 4.5);
   const lateralDamping = clamp(1.5 + spinDamping * 1.1 + arrow.vaneDragFactor * 0.45, 1.2, 5);
 
@@ -220,6 +230,9 @@ function buildFishtailingNotes(spineMismatch, dynamicInputs) {
   if (dynamicInputs.frontMassFactor > 0.1) {
     notes.push('La masse avant adoucit dynamiquement la flèche.');
   }
+  if (Math.abs(dynamicInputs.massInertiaFactor) > 0.1) {
+    notes.push('La masse totale modifie l?inertie vibratoire du syst?me.');
+  }
   if (dynamicInputs.arrowLengthFactor > 0.05) {
     notes.push('Une flèche plus longue augmente la souplesse dynamique.');
   }
@@ -230,6 +243,9 @@ function buildPorpoisingNotes(spineMismatch, dynamicInputs) {
   const notes = ['Proxy borné : la réponse verticale dépend surtout de la sortie et de la répartition des masses.'];
   if (dynamicInputs.frontMassFactor > 0.1 || dynamicInputs.focFactor > 0.1) {
     notes.push('La masse avant et le FOC modifient la réponse verticale.');
+  }
+  if (Math.abs(dynamicInputs.massInertiaFactor) > 0.1) {
+    notes.push('La masse totale agit comme un amortisseur inertiel born? dans ce proxy.');
   }
   if (spineMismatch.severity > 0.35) {
     notes.push('Un mismatch spine marqué ajoute un risque vertical secondaire.');
@@ -258,8 +274,15 @@ function estimateFocPercent(params, frontMassGrains) {
   if (Number.isFinite(params.balancePointIn) && params.balancePointIn > 0 && Number.isFinite(params.arrowLengthIn)) {
     return ((params.balancePointIn - params.arrowLengthIn / 2) / params.arrowLengthIn) * 100;
   }
-  const totalMassGrains = finiteOr(params.totalMassGrains, frontMassGrains + 180);
+  const totalMassGrains = resolveTotalMassGrains(params, frontMassGrains);
   return clamp((frontMassGrains / Math.max(totalMassGrains, 1)) * 38, 4, 24);
+}
+
+function resolveTotalMassGrains(params, frontMassGrains) {
+  if (Number.isFinite(params.totalMassGrains)) return params.totalMassGrains;
+  if (Number.isFinite(params.totalMassGr)) return params.totalMassGr * 15.4323584;
+  if (Number.isFinite(params.poidsGr)) return params.poidsGr * 15.4323584;
+  return frontMassGrains + 180;
 }
 
 function normalizeAround(value, baseline, span) {

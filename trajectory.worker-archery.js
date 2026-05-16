@@ -7,24 +7,26 @@ import { calculateTuningModel, oscillationAt } from './tuning-diagnostics.js';
 import {
   PHYSICS_CONSTANTS,
   buildInitialVelocity,
-  calculateAirDensityAdvanced,
   computeAdvancedCd,
-  windVector
 } from './physics-advanced.js';
 import { calculateEnergy, metersPerSecondToFPS } from './physics-archery.js';
+import { normalizeSimulationParams } from './simulation-params.js';
 
-function solveTrajectory3D(params) {
+function solveTrajectory3D(params, simulationInput) {
   const arrow = buildArrow(params);
   const launch = resolveLaunch(params, arrow);
   const tuning = calculateTuningModel(params, arrow);
-  const rho = calculateAirDensityAdvanced(params);
-  const wind = windVector(params);
+  // Le worker accepte désormais le contrat physique normalisé, tout en conservant
+  // les paramètres plats legacy pour les sous-modèles encore non migrés.
+  const simulation = simulationInput ?? normalizeSimulationParams(params, { arrow, launch });
+  const rho = simulation.atmosphere.densityKgM3;
+  const wind = simulation.wind.vectorMps;
   const velocity = buildInitialVelocity(params, launch);
   const dt = params.dt || 0.001;
   const maxIterations = 120000;
 
   let x = 0;
-  let y = params.shootingHeight;
+  let y = simulation.launch.heightM;
   let z = 0;
   let vx = velocity.x;
   let vy = velocity.y;
@@ -96,6 +98,7 @@ function solveTrajectory3D(params) {
     arrow,
     launch,
     tuning,
+    simulation,
     environment: { airDensity: rho, wind },
     stats: calculateStats(positions, arrow, finalPoint)
   };
@@ -152,8 +155,8 @@ function calculateStats(points, arrow, finalPoint) {
 self.onmessage = (e) => {
   if (e.data?.type !== 'calcTrajArchery') return;
   try {
-    const { params, requestId } = e.data;
-    const result = solveTrajectory3D(params);
+    const { params, simulation, requestId } = e.data;
+    const result = solveTrajectory3D(params, simulation);
     self.postMessage({ ok: true, requestId, ...result });
   } catch (err) {
     self.postMessage({ ok: false, requestId: e.data?.requestId, error: String(err?.stack || err) });

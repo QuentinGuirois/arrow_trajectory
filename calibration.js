@@ -1,7 +1,7 @@
 // calibration.js
 // Vitesse de sortie: la saisie chrono/utilisateur est la source de vérité.
 
-import { fpsToMetersPerSecond, clamp } from './units.js';
+import { fpsToMetersPerSecond, clamp, degreesToRadians } from './units.js';
 import { interpolatePointAtDistance } from './util.js';
 
 export function resolveLaunch(params) {
@@ -21,7 +21,7 @@ export function buildSightMarks(points, params) {
   return distances.map(distance => {
     const p = interpolatePointAtDistance(points, distance);
     if (!p) return null;
-    const scopeY = (params.shootingHeight + params.scopeOffset) + p.x * Math.tan(params.scopeAngleDeg * Math.PI / 180);
+    const scopeY = (params.shootingHeight + params.scopeOffset) + p.x * Math.tan(degreesToRadians(params.scopeAngleDeg));
     return {
       distance,
       holdoverCm: (p.y - scopeY) * 100,

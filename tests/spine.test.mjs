@@ -921,3 +921,73 @@ test('dynamic tuning inputs and porpoising react to front mass, power and spine 
   assert.notEqual(inputsBase.effectiveDrawWeightFactor, inputsPower.effectiveDrawWeightFactor);
   assert.ok(heavier.fishtailing.amplitudeCm !== base.fishtailing.amplitudeCm);
 });
+
+test('total arrow mass changes bounded tuning inertia without needing a FOC change', () => {
+  const common = {
+    ...DEFAULT_PARAMS,
+    bowType: 'recurve',
+    massMode: 'total',
+    poidsGr: 25,
+    pointWeightGrains: 100,
+    insertWeightGrains: 12,
+    spineStatic: 600
+  };
+  const lightRecommendation = resolveSpineRecommendation(common);
+  const heavyParams = { ...common, poidsGr: 35 };
+  const light = calculateTuningModel(
+    { ...common, spineRecommendation: lightRecommendation },
+    buildArrow(common)
+  );
+  const heavy = calculateTuningModel(
+    { ...heavyParams, spineRecommendation: resolveSpineRecommendation(heavyParams) },
+    buildArrow(heavyParams)
+  );
+
+  assert.notEqual(light.dynamicInputs.massInertiaFactor, heavy.dynamicInputs.massInertiaFactor);
+  assert.notEqual(light.porpoising.amplitudeCm, heavy.porpoising.amplitudeCm);
+});
+
+test('heavier point and insert change porpoising and increase fishtailing under mismatch', () => {
+  const common = {
+    ...DEFAULT_PARAMS,
+    bowType: 'recurve',
+    arrowLengthIn: 29,
+    spineReference: 'generalized',
+    pointWeightGrains: 100,
+    insertWeightGrains: 12
+  };
+  const baseRecommendation = resolveSpineRecommendation(common);
+  const mismatchSpine = baseRecommendation.rangeMax + 120;
+  const base = calculateTuningModel(
+    {
+      ...common,
+      spineStatic: mismatchSpine,
+      spineRecommendation: baseRecommendation
+    },
+    buildArrow(common)
+  );
+  const heavierFront = {
+    ...common,
+    spineStatic: mismatchSpine,
+    pointWeightGrains: 175,
+    insertWeightGrains: 45
+  };
+  const heavy = calculateTuningModel(
+    {
+      ...heavierFront,
+      spineRecommendation: resolveSpineRecommendation(heavierFront)
+    },
+    buildArrow(heavierFront)
+  );
+
+  assert.notEqual(base.porpoising.amplitudeCm, heavy.porpoising.amplitudeCm);
+  assert.ok(heavy.fishtailing.amplitudeCm > base.fishtailing.amplitudeCm);
+});
+
+test('worker keeps tuning oscillations out of the center-of-mass trajectory integration', () => {
+  const source = readFileSync(new URL('../trajectory.worker-archery.js', import.meta.url), 'utf8');
+  assert.match(source, /const cd = computeAdvancedCd\(params, arrow, relSpeed, 0, rho\);/);
+  assert.match(source, /porpoiseCm: tune\.verticalCm,/);
+  assert.match(source, /fishtailCm: tune\.lateralCm,/);
+  assert.doesNotMatch(source, /const a[xyz] = .*tune\./);
+});

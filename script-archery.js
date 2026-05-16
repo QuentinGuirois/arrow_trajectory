@@ -12,8 +12,9 @@ import { compareCurrentSpineToRange } from './spine-evaluation.js';
 import { deriveInternalReleaseType, normalizeBowType } from './bow-utils.js';
 import { formatPrintedSpineLabel } from './spine-display.js';
 import { resolveEffectiveDrawWeight } from './draw-weight.js';
+import { normalizeSimulationParams } from './simulation-params.js';
 import { debounce } from './util.js';
-import { formatNumber, readBool, readNumber } from './units.js';
+import { cmToMeters, formatNumber, mmToMeters, readBool, readNumber } from './units.js';
 
 const trajWorker = new Worker('./trajectory.worker-archery.js', { type: 'module' });
 const $ = id => document.getElementById(id);
@@ -90,8 +91,9 @@ function getFormValues() {
     if ($(id)) params[id] = $(id).value;
   });
   params.dispersionEnabled = readBool('dispersionEnabled');
-  params.diameter = readNumber('diameter', 7) / 1000;
-  params.scopeOffset = readNumber('scopeOffset', 5) / 100;
+  // Les ids HTML historiques restent en mm / cm ; le contrat legacy interne garde le SI.
+  params.diameter = mmToMeters(readNumber('diameter', 7));
+  params.scopeOffset = cmToMeters(readNumber('scopeOffset', 5));
   params.shootingHeight = DEFAULT_PARAMS.shootingHeight;
   params.releaseType = deriveInternalReleaseType(params.bowType);
   return params;
@@ -393,12 +395,13 @@ function saveCurrentResult() {
 }
 
 function runSim() {
-  const params = getFormValues();
-  const arrow = buildArrow(params);
-  const launch = resolveLaunch(params);
-  const spineRecommendation = resolveSpineRecommendation(params);
-  params.fps = launch.fps;
+  const formParams = getFormValues();
+  const arrow = buildArrow(formParams);
+  const launch = resolveLaunch(formParams);
+  const spineRecommendation = resolveSpineRecommendation(formParams);
+  const params = { ...formParams, fps: launch.fps };
   const workerParams = { ...params, spineRecommendation };
+  const simulation = normalizeSimulationParams(formParams, { arrow, launch });
   const requestId = ++appState.requestSeq;
   trajWorker.onmessage = (e) => {
     if (e.data.requestId !== requestId) return;
@@ -415,7 +418,8 @@ function runSim() {
       curveData: e.data.positions,
       arrow: e.data.arrow,
       launch: e.data.launch,
-      tuning: e.data.tuning
+      tuning: e.data.tuning,
+      simulation: e.data.simulation
     };
     appState.lastResult = curve;
     updateStatsPanel(curve.stats);
@@ -426,7 +430,7 @@ function runSim() {
       saveCurrentResult();
     }
   };
-  trajWorker.postMessage({ type: 'calcTrajArchery', requestId, params: workerParams });
+  trajWorker.postMessage({ type: 'calcTrajArchery', requestId, params: workerParams, simulation });
 }
 
 const scheduleRecalc = debounce(() => {
