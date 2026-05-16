@@ -84,7 +84,7 @@ L’étude scientifique locale documente les limites du spine statique et les pa
 - `spine-display.js` : helpers d'affichage spine en français.
 - `spine-trends.js` : tendances qualitatives et limites du spine statique.
 - `calibration.js` : vitesse chrono/utilisateur et sight marks par interpolation.
-- `tuning-diagnostics.js` : porpoising/fishtailing comparatifs.
+- `tuning-diagnostics.js` : `computeTuningDiagnostics(...)`, porpoising/fishtailing/AoA comparatifs et hypothèses explicites.
 - `aero-models.js` : densité d'air sec, viscosité dynamique par Sutherland, Reynolds et API Cd conservatrice.
 - `physics-advanced.js` : densité air humide/altitude, vent et adaptateur de compatibilité vers le modèle Cd.
 - `trajectory.worker-archery.js` : solveur 3D point-masse dans Web Worker.
@@ -173,7 +173,7 @@ Le modèle Cd actif reste volontairement `conservative`. Le dépôt ne contient 
 
 ## Limites
 
-- Pas de modèle mécanique complet de flexion de flèche.
+- Pas de modèle mécanique complet de flexion de flèche : le tuning fournit une estimation utile avec valeurs par défaut explicites, pas une vérité flexible mesurée.
 - Pas de dynamique 6-DoF.
 - Cd encore conservateur : fallback unique, `confidence: "rough"`, pas encore de loi sourcée par Reynolds/AoA/pointe/empennage.
 - Vent constant avec rafales simplifiées.

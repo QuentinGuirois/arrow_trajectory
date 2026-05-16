@@ -4,7 +4,7 @@
 import { appState, COLORS, DEFAULT_PARAMS, PRESETS } from './state.js';
 import { buildArrow } from './arrow-builder.js';
 import { resolveLaunch, buildSightMarks } from './calibration.js';
-import { calculateTuningModel } from './tuning-diagnostics.js';
+import { computeTuningDiagnostics } from './tuning-diagnostics.js';
 import { renderAllCharts, purgeCharts, showTab, resizeCharts } from './plotly-charts.js';
 import { decodeShare, encodeShare, loadSetups, saveSetups } from './share-schema.js';
 import { resolveSpineRecommendation } from './spine-recommendation.js';
@@ -171,7 +171,7 @@ function updateSpineRecommendation(params = getFormValues(), arrow = buildArrow(
     recommendation.rangeMax
   );
   appState.currentSpineRecommendation = recommendation;
-  const tuning = calculateTuningModel({ ...params, spineRecommendation: recommendation }, arrow);
+  const tuning = computeTuningDiagnostics({ ...params, spineRecommendation: recommendation }, []);
   renderArrowBuilderPanel(arrow, params, recommendation, comparison);
   renderDiagnosticsPanel(arrow, tuning);
   return { recommendation, comparison, tuning };
@@ -288,17 +288,49 @@ function buildManufacturerSpineSummary(params, recommendation, comparison) {
 
 
 function renderDiagnosticsPanel(arrow, tuning) {
+  const missingData = tuning.confidence.missingData || [];
   $('diagnosticsPanel').innerHTML = `
+    <div class="text-yellow-300 font-bold mb-2">${tuning.confidence.disclaimer}</div>
     <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
-      ${tuning.diagnostics.map(item => `
-        <div>
-          <div class="text-cyan-300 font-bold">${item.label}: ${item.level}</div>
-          <div class="text-gray-400">${item.detail}</div>
-        </div>
-      `).join('')}
+      <div>
+        <div class="text-cyan-300 font-bold">Confiance: ${tuning.confidence.level}</div>
+        <div class="text-gray-400">${tuning.confidence.mode} — ${tuning.confidence.trajectoryBasis}.</div>
+      </div>
+      <div>
+        <div class="text-cyan-300 font-bold">AoA: ${tuning.aoa.level}</div>
+        <div class="text-gray-400">${formatNumber(tuning.aoa.maxEstimatedDeg, 2)}&deg; max — ${tuning.aoa.status}.</div>
+      </div>
+      <div>
+        <div class="text-cyan-300 font-bold">Porpoising: ${tuning.porpoising.level}</div>
+        <div class="text-gray-400">${formatOscillatorSummary(tuning.porpoising)}</div>
+      </div>
+      <div>
+        <div class="text-cyan-300 font-bold">Fishtailing: ${tuning.fishtailing.level}</div>
+        <div class="text-gray-400">${formatOscillatorSummary(tuning.fishtailing)}</div>
+      </div>
+    </div>
+    <div class="mt-3 text-gray-400">${tuning.aoa.note}</div>
+    ${missingData.length ? `
+      <div class="mt-3">
+        <div class="text-cyan-300 font-bold">Donn&eacute;es &agrave; renseigner pour fiabiliser</div>
+        <ul class="text-gray-400 list-disc pl-5">
+          ${missingData.map(item => `<li>${item.label} — valeur utilis&eacute;e : ${item.defaultUsed}</li>`).join('')}
+        </ul>
+      </div>
+    ` : ''}
+    <div class="mt-3">
+      <div class="text-cyan-300 font-bold">Recommandations</div>
+      <ul class="text-gray-400 list-disc pl-5">
+        ${tuning.recommendations.map(item => `<li>${item}</li>`).join('')}
+      </ul>
     </div>
     <div class="mt-3 text-gray-400">${arrow.qualitativeTrends.join(' ')}</div>
   `;
+}
+
+function formatOscillatorSummary(channel) {
+  const o = channel.oscillator;
+  return `${formatNumber(o.A0Cm, 2)} cm ; λ ${formatNumber(o.lambdaM, 1)} m ; longueur d’onde ${formatNumber(o.wavelengthM, 1)} m.`;
 }
 
 function updateStatsPanel(stats = {}) {
@@ -439,6 +471,7 @@ function runSim() {
     };
     appState.lastResult = curve;
     updateStatsPanel(curve.stats);
+    renderDiagnosticsPanel(curve.arrow, curve.tuning);
     renderSightTable(curve);
     renderAllCharts(curvesForDisplay());
     if (appState.pendingSave) {

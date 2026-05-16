@@ -19,7 +19,9 @@ import { compareSpineStiffness, getSpineQualitativeTrends } from '../spine-trend
 import { buildArrow } from '../arrow-builder.js';
 import {
   calculateTuningModel,
-  computeDynamicTuningInputs
+  computeDynamicTuningInputs,
+  computeTuningDiagnostics,
+  oscillationAtDistance
 } from '../tuning-diagnostics.js';
 import { DEFAULT_PARAMS } from '../state.js';
 import { resolveEffectiveDrawWeight } from '../draw-weight.js';
@@ -990,5 +992,45 @@ test('worker keeps tuning oscillations out of the center-of-mass trajectory inte
   assert.match(source, /attackAngleDeg: 0,/);
   assert.match(source, /porpoiseCm: tune\.verticalCm,/);
   assert.match(source, /fishtailCm: tune\.lateralCm,/);
+  assert.match(source, /oscillationAtDistance\(x, tuningModel\)/);
   assert.doesNotMatch(source, /const a[xyz] = .*tune\./);
+});
+
+test('public tuning diagnostics returns useful estimates while exposing missing data', () => {
+  const params = {
+    ...DEFAULT_PARAMS,
+    massMode: 'components',
+    balancePointIn: 0,
+    vaneWeightTotalGrains: null
+  };
+  const diagnostics = computeTuningDiagnostics(params, []);
+
+  assert.deepEqual(Object.keys(diagnostics), [
+    'confidence',
+    'porpoising',
+    'fishtailing',
+    'aoa',
+    'recommendations'
+  ]);
+  assert.equal(diagnostics.confidence.mode, 'estimation avec valeurs par défaut');
+  assert.ok(diagnostics.confidence.missingData.some(item => item.key === 'balancePointIn'));
+  assert.ok(diagnostics.confidence.missingData.some(item => item.key === 'vaneWeightTotalGrains'));
+  assert.equal(diagnostics.aoa.status, 'qualitatif seulement');
+  assert.equal(diagnostics.porpoising.oscillator.formula, 'osc(x) = A0 * exp(-x/lambda) * sin(2πx/wavelength + phase)');
+  assert.equal(diagnostics.porpoising.oscillator.parameterSources.lambda, 'défaut expérimental');
+});
+
+test('distance-domain tuning oscillator is separate from COM coordinates', () => {
+  const params = { ...DEFAULT_PARAMS };
+  const arrow = buildArrow(params);
+  const model = calculateTuningModel(
+    { ...params, spineRecommendation: resolveSpineRecommendation(params) },
+    arrow
+  );
+  const atTenMeters = oscillationAtDistance(10, model);
+
+  assert.ok(Number.isFinite(atTenMeters.verticalCm));
+  assert.ok(Number.isFinite(atTenMeters.lateralCm));
+  assert.ok(Number.isFinite(atTenMeters.verticalSlopeCmPerM));
+  assert.ok(Number.isFinite(atTenMeters.lateralSlopeCmPerM));
 });

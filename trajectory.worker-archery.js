@@ -4,7 +4,11 @@
 
 import { buildArrow } from './arrow-builder.js';
 import { resolveLaunch } from './calibration.js';
-import { calculateTuningModel, oscillationAt } from './tuning-diagnostics.js';
+import {
+  calculateTuningModel,
+  computeTuningDiagnostics,
+  oscillationAtDistance
+} from './tuning-diagnostics.js';
 import {
   PHYSICS_CONSTANTS,
   buildInitialVelocity,
@@ -35,7 +39,7 @@ export function calculateTrajectory3D(simParams = {}) {
   const params = normalizeLegacySimulationParams(inputParams);
   const arrow = buildArrow(params);
   const launch = resolveLaunch(params, arrow);
-  const tuning = calculateTuningModel(params, arrow);
+  const tuningModel = calculateTuningModel(params, arrow);
   const simulation = simParams.simulation ?? normalizeSimulationParams(params, { arrow, launch });
   const rho = finiteOr(simulation.atmosphere?.densityKgM3, 1.2);
   const dynamicViscosity = finiteOr(
@@ -67,7 +71,7 @@ export function calculateTrajectory3D(simParams = {}) {
     diameterM: simulation.arrow.diameterM,
     dynamicViscosityPaS: dynamicViscosity
   });
-  const initialTune = oscillationAt(0, tuning);
+  const initialTune = oscillationAtDistance(0, tuningModel);
   positions.push(buildPoint({
     x,
     y,
@@ -81,7 +85,7 @@ export function calculateTrajectory3D(simParams = {}) {
     relativeSpeedMps: initialRelSpeed,
     launchHeightM: simulation.launch.heightM,
     tune: initialTune,
-    aoaRad: estimateDiagnosticAoaRad(initialTune, initialRelSpeed),
+    aoaRad: estimateDiagnosticAoaRad(initialTune),
     aero: initialAero,
     params
   }));
@@ -94,8 +98,8 @@ export function calculateTrajectory3D(simParams = {}) {
     const relativeSpeedMps = Math.hypot(rel.x, rel.y, rel.z);
     if (!Number.isFinite(relativeSpeedMps) || relativeSpeedMps < MIN_RELATIVE_SPEED_MPS) break;
 
-    const tune = oscillationAt(time, tuning);
-    const aoaRad = estimateDiagnosticAoaRad(tune, relativeSpeedMps);
+    const tune = oscillationAtDistance(x, tuningModel);
+    const aoaRad = estimateDiagnosticAoaRad(tune);
     const aero = evaluateAero({
       rho,
       relativeSpeedMps,
@@ -123,7 +127,7 @@ export function calculateTrajectory3D(simParams = {}) {
     if (z <= 0) {
       const ratio = previous.z / Math.max(0.000001, previous.z - z);
       const impact = interpolateState(previous, next, ratio);
-      const impactTune = oscillationAt(impact.time, tuning);
+      const impactTune = oscillationAtDistance(impact.x, tuningModel);
       const impactRel = relativeVelocity(impact, wind);
       const impactRelSpeed = Math.hypot(impactRel.x, impactRel.y, impactRel.z);
       const impactAero = evaluateAero({
@@ -140,7 +144,7 @@ export function calculateTrajectory3D(simParams = {}) {
         relativeSpeedMps: impactRelSpeed,
         launchHeightM: simulation.launch.heightM,
         tune: impactTune,
-        aoaRad: estimateDiagnosticAoaRad(impactTune, impactRelSpeed),
+        aoaRad: estimateDiagnosticAoaRad(impactTune),
         aero: impactAero,
         params
       }));
@@ -167,6 +171,7 @@ export function calculateTrajectory3D(simParams = {}) {
   }
 
   const finalPoint = positions[positions.length - 1];
+  const tuning = computeTuningDiagnostics(params, positions);
   return {
     modelVersion: POINT_MASS_3D_MODEL_VERSION,
     positions,
@@ -256,9 +261,9 @@ function evaluateAero({ rho, relativeSpeedMps, diameterM, dynamicViscosityPaS })
   return { re, ...aero };
 }
 
-function estimateDiagnosticAoaRad(tune, speed) {
-  const oscillationSlope = Math.hypot(tune.verticalCm, tune.lateralCm) / 100;
-  return Math.min(0.18, oscillationSlope / Math.max(8, speed));
+function estimateDiagnosticAoaRad(tune) {
+  const oscillationSlope = Math.hypot(tune.verticalSlopeCmPerM, tune.lateralSlopeCmPerM) / 100;
+  return Math.atan(oscillationSlope);
 }
 
 function calculateStats(points, arrow, finalPoint) {

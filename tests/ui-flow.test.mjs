@@ -17,6 +17,13 @@ test('fields without visible effect are no longer exposed', async () => {
   assert.doesNotMatch(html, /id="calibrationPanel"/);
 });
 
+test('tuning UI stays advanced-only and states the qualitative disclaimer', async () => {
+  const html = await readFile(new URL('../index.html', import.meta.url), 'utf8');
+
+  assert.match(html, /class="[^"]*advanced-tab[^"]*" id="tabTuning">Tuning<\/button>/);
+  assert.match(html, /Diagnostic qualitatif, pas simulation flexible complète\./);
+});
+
 test('conditional fields update immediately while trajectory recalculation stays debounced', async () => {
   const source = await readFile(new URL('../script-archery.js', import.meta.url), 'utf8');
 
