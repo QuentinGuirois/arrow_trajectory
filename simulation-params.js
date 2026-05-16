@@ -5,10 +5,10 @@
 import { buildArrow } from './arrow-builder.js';
 import { resolveLaunch } from './calibration.js';
 import {
-  PHYSICS_CONSTANTS,
   calculateAirDensityAdvanced,
   windVector
 } from './physics-advanced.js';
+import { calculateDynamicViscosity } from './aero-models.js';
 import { DEFAULT_PARAMS } from './state.js';
 import {
   cmToMeters,
@@ -78,7 +78,7 @@ export function normalizeSimulationParams(input = {}, precomputed = {}) {
       temperatureC: params.temperatureCelsius,
       pressurePa: hPaToPascals(params.pressureHpa),
       densityKgM3: calculateAirDensityAdvanced(params),
-      dynamicViscosityPaS: PHYSICS_CONSTANTS.airViscosity
+      dynamicViscosityPaS: calculateDynamicViscosity(params.temperatureCelsius)
     },
     wind: {
       // `speedMps` est la vitesse météo de base ; `vectorMps` inclut la rafale simplifiée existante.

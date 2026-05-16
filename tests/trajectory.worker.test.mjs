@@ -28,7 +28,9 @@ test('point-mass 3D worker exposes the canonical contract without non-finite val
     'momentum', 'driftM', 'dropM', 're', 'cd'
   ];
   assert.ok(result.positions.every(point => requiredNumericKeys.every(key => Number.isFinite(point[key]))));
-  assert.ok(result.positions.every(point => typeof point.aeroRegime === 'string'));
+  assert.ok(result.positions.every(point => ['low-re', 'transition', 'high-re', 'unknown'].includes(point.aeroRegime)));
+  assert.ok(result.positions.every(point => point.aeroConfidence === 'rough'));
+  assert.ok(result.positions.every(point => Array.isArray(point.aeroWarnings)));
 });
 
 test('crosswind produces lateral drift through y, not an artificial vertical perturbation', () => {

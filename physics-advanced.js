@@ -1,12 +1,19 @@
 // physics-advanced.js
-// Constantes et sous-modèles physiques avancés. Les coefficients aérodynamiques sont documentés comme simplifiés.
+// Constantes et sous-modèles physiques avancés hors modèle Cd dédié.
 
 import { fpsToMetersPerSecond, kmhToMps, clamp, degreesToRadians } from './units.js';
+import {
+  calculateDynamicViscosity,
+  calculateReynoldsNumber,
+  getDragCoefficient
+} from './aero-models.js';
 
 export const PHYSICS_CONSTANTS = {
   gravity: 9.80665,
   airGasDry: 287.058,
   airGasVapor: 461.495,
+  // Référence legacy conservée pour les imports historiques ; le calcul courant
+  // passe par `calculateDynamicViscosity(tempC)` dans `aero-models.js`.
   airViscosity: 1.81e-5
 };
 
@@ -33,19 +40,20 @@ export function windVector(params) {
 }
 
 export function computeAdvancedCd(params, arrow, relativeSpeed, aoaRad, airDensity = 1.2) {
-  // Cd simplifié: Reynolds plus correct (rho * v * D / mu), puis facteurs empiriques bornés.
-  const reynolds = Math.max(15000, airDensity * relativeSpeed * arrow.diameterM / PHYSICS_CONSTANTS.airViscosity);
-  const reynoldsFactor = clamp(1.08 - Math.log10(reynolds / 50000) * 0.08, 0.82, 1.18);
-  const shaftBase = 0.78;
-  const diameterFactor = clamp(arrow.diameterM / 0.0065, 0.75, 1.35);
-  const vaneFactor = 0.08 * arrow.vaneDragFactor;
-  const fletchAngleFactor = params.fletchingOrientation === 'helical'
-    ? 0.08 + params.fletchingAngleDeg * 0.018
-    : params.fletchingOrientation === 'offset'
-      ? 0.04 + params.fletchingAngleDeg * 0.012
-      : 0;
-  const aoaFactor = clamp(1 + Math.abs(aoaRad) * 4.5, 1, 1.6);
-  return (shaftBase * diameterFactor + vaneFactor + fletchAngleFactor) * reynoldsFactor * aoaFactor;
+  // Adaptateur temporaire : les anciens imports continuent de fonctionner,
+  // mais la décision Cd vit désormais dans `aero-models.js`.
+  const mu = calculateDynamicViscosity(params?.temperatureCelsius ?? 20);
+  const re = calculateReynoldsNumber({
+    rho: airDensity,
+    speedMps: relativeSpeed,
+    diameterM: arrow?.diameterM,
+    mu
+  });
+  return getDragCoefficient({
+    re,
+    attackAngleDeg: aoaRad * 180 / Math.PI,
+    model: 'conservative'
+  }).cd;
 }
 
 export function buildInitialVelocity(params, launch) {

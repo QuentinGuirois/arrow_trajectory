@@ -11,6 +11,7 @@ import {
   normalizeLegacySimulationParams,
   normalizeSimulationParams
 } from '../simulation-params.js';
+import { calculateDynamicViscosity } from '../aero-models.js';
 
 test('normalized simulation contract exposes SI values from current defaults', () => {
   const simulation = normalizeSimulationParams(DEFAULT_PARAMS);
@@ -22,6 +23,7 @@ test('normalized simulation contract exposes SI values from current defaults', (
   assert.equal(simulation.arrow.massGrains, gramsToGrains(DEFAULT_PARAMS.poidsGr));
   assert.equal(simulation.arrow.diameterM, DEFAULT_PARAMS.diameter);
   assert.equal(simulation.atmosphere.pressurePa, DEFAULT_PARAMS.pressureHpa * 100);
+  assert.equal(simulation.atmosphere.dynamicViscosityPaS, calculateDynamicViscosity(DEFAULT_PARAMS.temperatureCelsius));
   assert.deepEqual(simulation.raw, {
     fps: DEFAULT_PARAMS.fps,
     poidsGr: DEFAULT_PARAMS.poidsGr,

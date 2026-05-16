@@ -8,9 +8,13 @@ import { calculateTuningModel, oscillationAt } from './tuning-diagnostics.js';
 import {
   PHYSICS_CONSTANTS,
   buildInitialVelocity,
-  computeAdvancedCd,
 } from './physics-advanced.js';
 import { calculateEnergy, metersPerSecondToFPS } from './physics-archery.js';
+import {
+  calculateDynamicViscosity,
+  calculateReynoldsNumber,
+  getDragCoefficient
+} from './aero-models.js';
 import {
   normalizeLegacySimulationParams,
   normalizeSimulationParams
@@ -36,7 +40,7 @@ export function calculateTrajectory3D(simParams = {}) {
   const rho = finiteOr(simulation.atmosphere?.densityKgM3, 1.2);
   const dynamicViscosity = finiteOr(
     simulation.atmosphere?.dynamicViscosityPaS,
-    PHYSICS_CONSTANTS.airViscosity
+    calculateDynamicViscosity(params.temperatureCelsius)
   );
   const wind = finiteVector3(simulation.wind?.vectorMps);
   const area = Math.PI * Math.pow(simulation.arrow.diameterM, 2) / 4;
@@ -57,9 +61,13 @@ export function calculateTrajectory3D(simParams = {}) {
   const positions = [];
   const initialRel = relativeVelocity({ vx, vy, vz }, wind);
   const initialRelSpeed = Math.hypot(initialRel.x, initialRel.y, initialRel.z);
-  const initialRe = calculateReynoldsNumber(rho, initialRelSpeed, simulation.arrow.diameterM, dynamicViscosity);
+  const initialAero = evaluateAero({
+    rho,
+    relativeSpeedMps: initialRelSpeed,
+    diameterM: simulation.arrow.diameterM,
+    dynamicViscosityPaS: dynamicViscosity
+  });
   const initialTune = oscillationAt(0, tuning);
-  const initialCd = computeAdvancedCd(params, arrow, initialRelSpeed, 0, rho);
   positions.push(buildPoint({
     x,
     y,
@@ -74,8 +82,7 @@ export function calculateTrajectory3D(simParams = {}) {
     launchHeightM: simulation.launch.heightM,
     tune: initialTune,
     aoaRad: estimateDiagnosticAoaRad(initialTune, initialRelSpeed),
-    cd: initialCd,
-    re: initialRe,
+    aero: initialAero,
     params
   }));
 
@@ -89,11 +96,15 @@ export function calculateTrajectory3D(simParams = {}) {
 
     const tune = oscillationAt(time, tuning);
     const aoaRad = estimateDiagnosticAoaRad(tune, relativeSpeedMps);
-    const cd = computeAdvancedCd(params, arrow, relativeSpeedMps, 0, rho);
-    const re = calculateReynoldsNumber(rho, relativeSpeedMps, simulation.arrow.diameterM, dynamicViscosity);
+    const aero = evaluateAero({
+      rho,
+      relativeSpeedMps,
+      diameterM: simulation.arrow.diameterM,
+      dynamicViscosityPaS: dynamicViscosity
+    });
 
     // Fd = -0.5 * rho * Cd * area * |vRel| * vRel
-    const dragFactor = -0.5 * rho * cd * area * relativeSpeedMps / arrow.totalMassKg;
+    const dragFactor = -0.5 * rho * aero.cd * area * relativeSpeedMps / arrow.totalMassKg;
     const ax = dragFactor * rel.x;
     const ay = dragFactor * rel.y;
     const az = dragFactor * rel.z - PHYSICS_CONSTANTS.gravity;
@@ -115,8 +126,12 @@ export function calculateTrajectory3D(simParams = {}) {
       const impactTune = oscillationAt(impact.time, tuning);
       const impactRel = relativeVelocity(impact, wind);
       const impactRelSpeed = Math.hypot(impactRel.x, impactRel.y, impactRel.z);
-      const impactRe = calculateReynoldsNumber(rho, impactRelSpeed, simulation.arrow.diameterM, dynamicViscosity);
-      const impactCd = computeAdvancedCd(params, arrow, impactRelSpeed, 0, rho);
+      const impactAero = evaluateAero({
+        rho,
+        relativeSpeedMps: impactRelSpeed,
+        diameterM: simulation.arrow.diameterM,
+        dynamicViscosityPaS: dynamicViscosity
+      });
       positions.push(buildPoint({
         ...impact,
         z: 0,
@@ -126,8 +141,7 @@ export function calculateTrajectory3D(simParams = {}) {
         launchHeightM: simulation.launch.heightM,
         tune: impactTune,
         aoaRad: estimateDiagnosticAoaRad(impactTune, impactRelSpeed),
-        cd: impactCd,
-        re: impactRe,
+        aero: impactAero,
         params
       }));
       break;
@@ -147,8 +161,7 @@ export function calculateTrajectory3D(simParams = {}) {
       launchHeightM: simulation.launch.heightM,
       tune,
       aoaRad,
-      cd,
-      re,
+      aero,
       params
     }));
   }
@@ -180,8 +193,7 @@ function buildPoint({
   launchHeightM,
   tune,
   aoaRad,
-  cd,
-  re,
+  aero,
   params
 }) {
   const dispersionBase = params.dispersionEnabled
@@ -206,9 +218,11 @@ function buildPoint({
     momentum: arrow.totalMassKg * speedMps,
     driftM: y,
     dropM: launchHeightM - z,
-    re,
-    cd,
-    aeroRegime: classifyAeroRegime(re),
+    re: aero.re,
+    cd: aero.cd,
+    aeroRegime: aero.regime,
+    aeroConfidence: aero.confidence,
+    aeroWarnings: [...aero.warnings],
     relativeSpeedMps,
     porpoiseCm: tune.verticalCm,
     fishtailCm: tune.lateralCm,
@@ -225,15 +239,21 @@ function relativeVelocity(velocity, wind) {
   };
 }
 
-function calculateReynoldsNumber(rho, relativeSpeedMps, diameterM, dynamicViscosityPaS) {
-  return rho * relativeSpeedMps * diameterM / dynamicViscosityPaS;
-}
-
-function classifyAeroRegime(reynolds) {
-  if (!Number.isFinite(reynolds)) return 'unknown';
-  if (reynolds < 20000) return 'low-Re';
-  if (reynolds < 80000) return 'mid-Re';
-  return 'high-Re';
+function evaluateAero({ rho, relativeSpeedMps, diameterM, dynamicViscosityPaS }) {
+  const re = calculateReynoldsNumber({
+    rho,
+    speedMps: relativeSpeedMps,
+    diameterM,
+    mu: dynamicViscosityPaS
+  });
+  const aero = getDragCoefficient({
+    re,
+    attackAngleDeg: 0,
+    pointShape: 'field',
+    vaneConfig: null,
+    model: 'conservative'
+  });
+  return { re, ...aero };
 }
 
 function estimateDiagnosticAoaRad(tune, speed) {

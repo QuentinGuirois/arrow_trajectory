@@ -85,7 +85,8 @@ L’étude scientifique locale documente les limites du spine statique et les pa
 - `spine-trends.js` : tendances qualitatives et limites du spine statique.
 - `calibration.js` : vitesse chrono/utilisateur et sight marks par interpolation.
 - `tuning-diagnostics.js` : porpoising/fishtailing comparatifs.
-- `physics-advanced.js` : densité air, vent, Cd simplifié avec Reynolds corrigé.
+- `aero-models.js` : densité d'air sec, viscosité dynamique par Sutherland, Reynolds et API Cd conservatrice.
+- `physics-advanced.js` : densité air humide/altitude, vent et adaptateur de compatibilité vers le modèle Cd.
 - `trajectory.worker-archery.js` : solveur 3D point-masse dans Web Worker.
 - `plotly-charts.js` : graphes Plotly.
 - `share-schema.js` : partage URL versionné et localStorage.
@@ -164,11 +165,17 @@ Les ids HTML historiques restent inchangés (`fps`, `poidsGr`, `diameter`, `scop
 
 `fps` reste la vérité chrono. `simulation-params.js` accepte encore les conventions legacy utiles à la transition (diamètre en mm ou m, offset de visée en cm ou m) puis expose des unités physiques explicites. Le message Worker transporte temporairement les deux couches : `params` pour la compatibilité avec les sous-modèles encore non migrés, `simulation` pour la frontière physique normalisée.
 
+## Modèle aérodynamique
+
+`aero-models.js` porte maintenant les briques physiques communes : densité d'air sec, viscosité dynamique via la loi de Sutherland, nombre de Reynolds et une API `getDragCoefficient(...)` extensible. Le worker consomme directement ce module et expose pour chaque point `re`, `cd` et `aeroRegime`.
+
+Le modèle Cd actif reste volontairement `conservative`. Le dépôt ne contient pas encore de loi Cd sourcée par Reynolds / angle d'attaque / pointe / empennage ; il utilise donc un unique Cd de repli de compatibilité avec `confidence: "rough"` plutôt que de fabriquer une précision fictive. L'API accepte déjà `attackAngleDeg`, `pointShape` et `vaneConfig`, mais ces champs ne modifient pas encore numériquement Cd faute de calibration documentée. Quand Reynolds tombe dans la zone intermédiaire, le moteur marque le point `transition` et ajoute l'avertissement `Zone de transition aérodynamique : Cd plus incertain.`
+
 ## Limites
 
 - Pas de modèle mécanique complet de flexion de flèche.
 - Pas de dynamique 6-DoF.
-- Cd simplifié malgré un Reynolds plus correct.
+- Cd encore conservateur : fallback unique, `confidence: "rough"`, pas encore de loi sourcée par Reynolds/AoA/pointe/empennage.
 - Vent constant avec rafales simplifiées.
 - Les presets sont indicatifs, pas des recommandations professionnelles.
 - Les recommandations spine fiables nécessitent une table fabricant chargée.

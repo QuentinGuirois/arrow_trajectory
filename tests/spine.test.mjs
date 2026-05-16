@@ -986,7 +986,8 @@ test('heavier point and insert change porpoising and increase fishtailing under 
 
 test('worker keeps tuning oscillations out of the center-of-mass trajectory integration', () => {
   const source = readFileSync(new URL('../trajectory.worker-archery.js', import.meta.url), 'utf8');
-  assert.match(source, /const cd = computeAdvancedCd\(params, arrow, relSpeed, 0, rho\);/);
+  assert.match(source, /const aero = evaluateAero\(/);
+  assert.match(source, /attackAngleDeg: 0,/);
   assert.match(source, /porpoiseCm: tune\.verticalCm,/);
   assert.match(source, /fishtailCm: tune\.lateralCm,/);
   assert.doesNotMatch(source, /const a[xyz] = .*tune\./);
